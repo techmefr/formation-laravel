@@ -1,91 +1,170 @@
-# Cours 1 — Juste assez de PHP pour lire du Laravel
+# Cours 1 — PHP pour un dev JS/TS
 
-> Pour un dev qui connaît déjà JS/TS. On ne fait que le nécessaire pour lire/écrire du Laravel, en JS ↔ PHP côte à côte.
+> Objectif : pouvoir **lire n'importe quel fichier Laravel** sans buter sur la syntaxe. Tu connais déjà la programmation (JS/TS, Nest, React…) — on ne fait que la **traduction** vers PHP, une notion à la fois.
 
-## 1. Comment PHP tourne
+---
 
-PHP est un langage **serveur** : un fichier `.php` est exécuté à chaque requête HTTP, il produit une réponse, puis **tout est oublié** — pas d'état en mémoire entre deux requêtes (contrairement à un serveur Node qui reste allumé). C'est *stateless* par nature, d'où l'importance de la base de données et du cache.
+## 0. Le kit de survie (à lire en premier)
 
-Chaque instruction se termine par `;`, les variables commencent par **`$`**.
+Avant tout le détail, ces 5 réflexes suffisent à déchiffrer 90 % du code :
+
+| Réflexe | JS/TS | PHP |
+|---|---|---|
+| Les variables commencent par `$` | `const nom = 'x'` | `$nom = 'x';` |
+| Chaque ligne finit par `;` | optionnel | **obligatoire** |
+| On colle des chaînes avec `.` | `a + b` | `$a . $b` |
+| Accès objet avec `->` | `obj.prop` | `$obj->prop` |
+| Import en haut du fichier | `import { X } from '…'` | `use App\X;` |
+
+Garde ce tableau en tête, le reste ce sont des détails.
+
+---
+
+## 1. Comment PHP s'exécute (30 secondes)
+
+Un fichier `.php` tourne **à chaque requête HTTP**, produit une réponse, puis **oublie tout**. Il n'y a pas de serveur qui reste allumé en mémoire comme ton `node` — c'est *stateless*.
+
+> 💡 Conséquence : l'état vit dans la **base de données**, pas dans des variables globales. Comme quand tu fais du serverless (une fonction par requête).
 
 ```php
-<?php
+<?php                       // ouvre un fichier PHP
 $nom = "Gaetan";
-echo "Bonjour $nom";   // les variables s'interpolent dans les guillemets doubles
+echo "Bonjour $nom";        // affiche : Bonjour Gaetan
 ```
 
-## 2. Variables & types
+---
 
-Pas de `let`/`const` : juste `$maVar`. Typage dynamique comme JS, mais PHP 8.4 permet de **typer** presque partout (et Laravel en abuse, tant mieux).
+## 2. Variables : juste `$`
+
+Pas de `let`, `const`, `var`. Une variable = `$` + son nom. Type dynamique, comme JS.
 
 ```php
-$age = 30;              // int
-$prix = 19.99;          // float
-$actif = true;          // bool
-$nom = "yoga";          // string
-$rien = null;           // null
+$age    = 30;        // JS : let age = 30
+$actif  = true;
+$nom    = "yoga";
+$rien   = null;
 ```
 
-## 3. Strings : le piège du `.`
+C'est tout. Le `$` est **toujours** là, même quand tu réutilises la variable (`$age = $age + 1;`).
 
-La concaténation se fait avec **`.`** — `+` c'est *uniquement* l'addition en PHP.
+---
+
+## 3. Les chaînes de caractères
+
+Deux pièges pour un dev JS.
+
+**Piège 1 — on concatène avec `.`, pas avec `+`.** En PHP, `+` c'est *uniquement* l'addition de nombres.
 
 ```php
-$a = "Séance " . "yoga";        // "Séance yoga"
-$msg = "Coach : {$coach->nom}"; // interpolation, {} pour les expressions
+$message = "Séance " . "yoga";     // ✅ "Séance yoga"
+// $message = "Séance " + "yoga";  // ❌ erreur / résultat absurde
 ```
 
-## 4. Les tableaux — LE concept clé
-
-En PHP il n'y a qu'**un seul** type `array`, qui sert à la fois de **liste** (array JS) ET d'**objet/map** (`{}` / `Map`). Central, car Laravel renvoie des `array` associatifs partout (config, règles de validation, JSON).
+**Piège 2 — guillemets doubles vs simples.**
 
 ```php
-// Liste (clés numériques auto)
+$nom = "Gaetan";
+echo "Bonjour $nom";     // doubles → interpole : "Bonjour Gaetan"
+echo 'Bonjour $nom';     // simples → littéral : "Bonjour $nom"
+echo "Coach : {$user->nom}";   // {} pour une expression, comme ${...} en JS
+```
+
+Règle simple : guillemets **doubles** = comme les backticks JS (avec variables dedans).
+
+---
+
+## 4. Les tableaux — LE concept à maîtriser
+
+En JS tu as deux choses : les tableaux `[]` et les objets `{}`. **En PHP il n'y a qu'un seul type : `array`**, qui fait les deux.
+
+### a) En mode liste (comme un array JS)
+
+```php
 $roles = ['admin', 'coach', 'collaborator'];
 echo $roles[0];          // 'admin'
+$roles[] = 'invite';     // push
+```
 
-// Associatif = l'équivalent d'un objet JS { }
+### b) En mode "objet" (clé => valeur)
+
+```php
 $user = [
-    'name'  => 'Gaetan',   // => au lieu de :
+    'name'  => 'Gaetan',      // en JS : { name: 'Gaetan' }
     'email' => 'g@xefi.fr',
 ];
-echo $user['name'];        // accès avec ['clé'], PAS .name
+echo $user['name'];           // 'Gaetan'  — attention : ['clé'], pas .name
 ```
+
+La flèche `=>` remplace le `:` des objets JS. Et on lit toujours avec `['clé']`, jamais `.clé`.
+
+### Table de traduction
 
 | JavaScript | PHP |
 |---|---|
-| `const a = [1, 2, 3]` | `$a = [1, 2, 3];` |
-| `const o = { name: 'x' }` | `$o = ['name' => 'x'];` |
-| `o.name` | `$o['name']` |
-| `a.map(fn)` | `array_map($fn, $a)` |
-| `a.filter(fn)` | `array_filter($a, $fn)` |
+| `[1, 2, 3]` | `[1, 2, 3]` |
+| `{ name: 'x' }` | `['name' => 'x']` |
+| `obj.name` | `$obj['name']` |
+| `arr.map(f)` | `array_map($f, $arr)` |
+| `arr.filter(f)` | `array_filter($arr, $f)` |
+| `arr.length` | `count($arr)` |
 
-> 💡 En Laravel tu utiliseras surtout les **Collections** (`collect($a)->map()->filter()`), qui ramènent la syntaxe fluide et chaînée de JS. Mais le socle reste l'`array`.
+> 💡 En Laravel tu manipuleras surtout des **Collections** : `collect($arr)->map(...)->filter(...)`. Ça te redonne exactement la syntaxe chaînée que tu aimes en JS. Mais dessous, c'est un `array`.
 
-## 5. Fonctions
+---
+
+## 5. Comparaisons : la bonne nouvelle
+
+Comme en JS : `==` compare mollement (avec conversion de type), `===` compare strictement. **Utilise `===`**, exactement le même réflexe qu'en JS.
 
 ```php
-function total(int $a, int $b): int {   // types optionnels mais recommandés
+0 == '0'     // true  (mou — à éviter)
+0 === '0'    // false (strict — le bon)
+```
+
+---
+
+## 6. Les fonctions
+
+```php
+function total(int $a, int $b): int {     // types en option, mais on les met
     return $a + $b;
 }
 
-// Fonction fléchée — pour les callbacks, comme en JS
-$double = fn($x) => $x * 2;
+// Fonction fléchée — pour les callbacks
+$double = fn($x) => $x * 2;               // JS : const double = x => x * 2
 ```
 
-## 6. Les classes — la partie qui compte vraiment
+Les types (`int`, `string`, `bool`, `: int` pour le retour) sont comme en TS, mais **vérifiés à l'exécution**, pas à la compilation.
 
-**Laravel, c'est de la POO du début à la fin.** Un Model, un Controller, une Notification = une classe.
+---
+
+## 7. Le `null` et ses raccourcis
+
+Mêmes outils qu'en JS moderne :
+
+```php
+$nom = $user?->nom;              // nullsafe : ?-> (comme obj?.prop en JS)
+$valeur = $prix ?? 0;            // ?? : valeur par défaut si null (identique à JS)
+$prix = null;                    // pas de undefined en PHP, juste null
+```
+
+Et pour typer "peut être null" : `?int`, `?string` (comme `int | null` en TS).
+
+---
+
+## 8. Les classes — le cœur de Laravel
+
+**Tout Laravel est en classes** : un Model, un Controller, une Notification = une classe. Si tu as fait du NestJS, tu es en terrain connu.
 
 ```php
 <?php
 
 class Seance {
-    public string $name;
-    protected ?int $maxParticipants;   // ?int = int OU null
+    public string $name;              // propriété typée + visibilité
+    protected ?int $maxParticipants;  // ?int = int OU null
 
     public function __construct(string $name) {
-        $this->name = $name;           // $this = "this", mais avec ->
+        $this->name = $name;          // $this = le "this" JS, mais avec ->
     }
 
     public function estComplete(int $inscrits): bool {
@@ -93,50 +172,124 @@ class Seance {
     }
 }
 
-$s = new Seance('Yoga');       // instanciation
-echo $s->name;                 // -> pour accéder à un membre d'instance
+$s = new Seance('Yoga');       // instanciation, comme en JS
+echo $s->name;                 // -> pour accéder aux membres
 ```
 
-Les 4 opérateurs à retenir :
+### Le raccourci qu'on voit partout : constructor promotion
 
-| Symbole | Sens | Exemple |
-|---|---|---|
-| `->` | accès **instance** (méthode/propriété d'un objet) | `$seance->name` |
-| `::` | accès **statique / de classe** | `Seance::create(...)` |
-| `$this` | l'instance courante (le `this` JS) | `$this->name` |
-| `?type` | type **nullable** | `?int`, `?string` |
-
-Héritage & interfaces (dans chaque fichier Laravel) :
+Ces deux versions sont identiques — la seconde est celle utilisée dans Laravel :
 
 ```php
-class Seance extends Model { }                              // hérite de Model
-class Notif extends Notification implements ShouldQueue { } // + contrat/interface
+// version longue
+public string $name;
+public function __construct(string $name) { $this->name = $name; }
+
+// version courte (property promotion) — déclare + assigne d'un coup
+public function __construct(public string $name) {}
 ```
 
-`extends` = héritage (comme JS). `implements` = « je respecte ce contrat » (proche des interfaces TypeScript).
+> C'est l'équivalent des `constructor(private readonly x)` de NestJS/TS. Exactement la même idée.
 
-## 7. Namespaces & `use` — les imports
+### Les 4 symboles à reconnaître
 
-Chaque classe vit dans un **namespace** (son chemin logique). `use` importe une classe, comme `import` en JS.
+| Symbole | Sens | Exemple | En JS |
+|---|---|---|---|
+| `->` | membre d'une **instance** | `$seance->name` | `obj.name` |
+| `::` | membre **statique / de classe** | `Seance::create(...)` | `Class.method()` |
+| `$this` | l'instance courante | `$this->name` | `this.name` |
+| `?type` | type nullable | `?int` | `int \| null` |
+
+---
+
+## 9. Héritage & interfaces
+
+Comme en TS :
 
 ```php
-use App\Models\Seance;              // ≈ import { Seance } from '@/models/Seance'
+class Seance extends Model { }                               // hérite (extends)
+class Notif extends Notification implements ShouldQueue { }  // + respecte un contrat
+```
+
+- `extends` = héritage, identique à JS/TS.
+- `implements` = « je respecte ce contrat » = les **interfaces** TypeScript.
+
+---
+
+## 10. Les traits — le truc en plus (très utilisé)
+
+Pas d'équivalent direct en JS. Un **trait** est un bloc de méthodes qu'on "colle" dans une classe pour lui ajouter des capacités. Laravel en met partout dans les models :
+
+```php
+class Seance extends Model {
+    use SoftDeletes, HasRoles;   // ajoute les capacités "soft delete" + "rôles"
+}
+```
+
+> Pense aux **mixins** ou à un décorateur qui ajoute des méthodes. Quand tu vois `use XxxTrait;` en haut d'une classe, c'est ça.
+
+---
+
+## 11. Namespaces & `use` = les imports
+
+Chaque classe a un **namespace** (son chemin logique), et on l'importe avec `use` — c'est l'`import` de JS.
+
+```php
+use App\Models\Seance;          // JS : import { Seance } from '@/models/Seance'
 use Illuminate\Support\Facades\Notification;
 
 $s = new Seance();
 ```
 
-Le `\` sépare les niveaux (comme `/`). `App\Models\Seance` ↔ le fichier `app/Models/Seance.php` : la convention **PSR-4** fait ce mapping automatiquement (comme les alias de chemins en TS).
+Le `\` sépare les niveaux (comme `/` dans un chemin). `App\Models\Seance` correspond au fichier `app/Models/Seance.php` — ce mapping automatique s'appelle **PSR-4** (comme les alias de chemins `@/` en TS).
 
 ---
 
-## Récap mental JS → PHP
+## 12. On assemble tout : un mini-exemple
 
-- `$` devant les variables · `;` à la fin · `.` pour concaténer (jamais `+`)
-- `array` unique = liste **et** objet, accès par `['clé']`, flèche `=>` pour les paires
-- POO partout : `->` (instance), `::` (statique), `$this`, `?` (nullable)
-- `use` = `import`, namespaces mappés sur l'arborescence des fichiers
+Rien de nouveau ici — juste toutes les briques ensemble, comme tu les verras dans un vrai fichier :
 
-C'est ~80 % de ce que tu liras dans du code Laravel. Le reste (Eloquent, façades, helpers) s'apprend en contexte.
+```php
+<?php
+
+namespace App\Models;                    // 11. namespace
+
+use Illuminate\Database\Eloquent\Model;  // 11. import
+
+class Seance extends Model               // 8+9. classe qui hérite
+{
+    use SoftDeletes;                     // 10. trait
+
+    public function __construct(
+        public string $name,             // 8. property promotion
+        public ?int $maxParticipants = null,  // 7. nullable + défaut
+    ) {}
+
+    public function estComplete(int $inscrits): bool {   // 6. fonction typée
+        return $inscrits >= $this->maxParticipants;      // 8. $this / ->
+    }
+}
+```
+
+Si tu lis ce fichier sans blocage, l'objectif du cours est atteint.
+
+---
+
+## Récap — la carte JS → PHP
+
+- `$` devant chaque variable · `;` en fin de ligne
+- Chaînes : `.` pour coller, guillemets doubles = backticks JS
+- **`array` unique** = liste **et** objet, accès `['clé']`, paires avec `=>`
+- Comparaison : `===` (comme en JS)
+- `?->` et `??` : identiques à JS
+- Classes : `->` (instance), `::` (statique), `$this`, `?type` (nullable)
+- `extends` = héritage, `implements` = interface TS, `use Trait;` = mixin
+- `use App\X;` = `import`
+
+## ⚠️ Les 3 pièges qui piquent au début
+
+1. `+` ne colle **pas** les chaînes → utilise `.`
+2. On lit un tableau avec `$user['name']`, **pas** `$user->name` ni `$user.name`
+3. Le `$` ne s'oublie jamais, même à gauche d'un `=`
 
 ➡️ Suite : [Cours 2 — Le modèle mental de Laravel](02-laravel-modele-mental.md)
