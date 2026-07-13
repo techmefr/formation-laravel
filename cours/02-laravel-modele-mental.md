@@ -1,6 +1,6 @@
 # Cours 2 — Le modèle mental de Laravel
 
-> Comment les pièces s'emboîtent. Si tu as déjà fait du Nuxt ou du Rails, l'esprit « framework à conventions fortes » te sera familier.
+> Comment les pièces s'emboîtent. Si tu as déjà fait du NestJS ou du Nuxt, l'esprit « framework à conventions fortes » te sera familier.
 
 ## 1. Laravel en une phrase
 
