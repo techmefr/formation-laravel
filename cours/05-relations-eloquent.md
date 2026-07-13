@@ -147,6 +147,41 @@ sail artisan migrate:fresh --seed   # recrée la base et lance les seeders
 
 > 🔴 **Convention XEFI** : on n'utilise **pas** `fakerphp/faker` mais `xefi/faker-php`, imposé pour des données réalistes.
 
+### En pratique avec `xefi/faker-php`
+
+Le faker maison s'instancie comme un simple objet, et tu appelles ses méthodes pour générer des données :
+
+```php
+sail composer require xefi/faker-php --dev
+```
+
+```php
+$faker = new \Xefi\Faker\Faker();
+
+$faker->name();      // "John Doe"        → noms & texte
+$faker->sentence();  // "Yoga du matin…"  → phrases
+$faker->iban();      // un IBAN valide
+```
+
+La factory `Seance` version XEFI (celle du dessus utilisait `fake()` juste pour illustrer) :
+
+```php
+// database/factories/SeanceFactory.php
+public function definition(): array
+{
+    $faker = new \Xefi\Faker\Faker();   // ← le faker XEFI, pas fake()
+
+    return [
+        'name'             => $faker->sentence(),           // texte réaliste
+        'coach_id'         => User::factory(),
+        'started_at'       => now()->addDays(rand(1, 30)),  // une date : Carbon suffit
+        'max_participants' => rand(8, 20),
+    ];
+}
+```
+
+> 💡 Le principe est le même que `fakerphp/faker` (une méthode = un type de donnée), donc rien de dépaysant. `xefi/faker-php` couvre aussi **dates, nombres, booléens**, plus des modificateurs **`unique()`** (pas de doublon) et **`optional()`** (valeur parfois nulle). Les noms exacts de ces providers/modificateurs sont dans la doc officielle → **faker-php.xefi.com** (à garder sous la main : c'est le package imposé, autant connaître ses méthodes).
+
 ---
 
 ## À retenir
