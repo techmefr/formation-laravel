@@ -15,6 +15,16 @@ Parcours d'apprentissage pour un dev qui connaît **JS/TS** et débute en **PHP/
 | 7 | [Events, Listeners & Notifications](07-events-listeners-notifications.md) | Async + mails (convention XEFI clé) |
 | 8 | [API REST, JWT & lomkit](08-api-rest-jwt-lomkit.md) | Partie II du projet |
 
+## Spécial XEFI — pour être opérationnel vite
+
+Focalisé sur **ce que fait XEFI** (conventions notées en revue, packages imposés, recettes du projet). C'est ici qu'il faut passer du temps avant la validation.
+
+| # | Cours | Ce que tu y gagnes |
+|---|---|---|
+| X1 | [Playbook des conventions](xefi-01-conventions.md) | Les règles non négociables (QCM + revue) |
+| X2 | [Packages imposés](xefi-02-packages.md) | spatie, xefi/faker, jwt-auth, lomkit… install + usage |
+| X3 | [Recettes du projet « Séances de sport »](xefi-03-recettes-projet.md) | Chaque feature, pas à pas, aux normes XEFI |
+
 ## Référence
 
 - [laravel-cours.md](laravel-cours.md) — le cours complet condensé (les 13 modules d'origine, en un seul document).
