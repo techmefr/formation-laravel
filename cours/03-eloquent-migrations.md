@@ -168,6 +168,17 @@ sail artisan tinker
 
 ## Questions qui reviennent
 
+**« `timestamps()` crée aussi `deleted_at` ? »**
+Non. `timestamps()` crée uniquement **`created_at` + `updated_at`** (remplies automatiquement par Eloquent à chaque `create`/`save`). `deleted_at` vient d'une méthode **séparée**, `softDeletes()`, et n'est réellement exploitée que si le model a `use SoftDeletes;`.
+
+| Tu écris dans la migration | Colonnes créées |
+|---|---|
+| `$table->timestamps()` | `created_at`, `updated_at` |
+| `$table->softDeletes()` | `deleted_at` |
+| les deux | les trois |
+
+> Timestamps activés par défaut ; pour les couper : `public $timestamps = false;` dans le model.
+
 **« `$table`, c'est le nom de la table ? »**
 Non. Le vrai nom de la table, c'est la **chaîne** dans `Schema::create('seances', …)`. `$table` n'est que le **nom d'un paramètre** — un objet `Blueprint` (le « constructeur de table ») que Laravel te passe. Tu pourrais l'appeler `$t`.
 
