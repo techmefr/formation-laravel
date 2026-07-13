@@ -8,15 +8,15 @@ Cours de référence : [cours/laravel-cours.md](cours/laravel-cours.md).
 - [x] Repo `formation-laravel` (remote SSH `techmefr`, branche `main`)
 - [x] Cours sauvegardé
 
-## Phase 1 — Comprendre (en cours)
-- [ ] **PHP pour un dev JS** — syntaxe, variables, tableaux, fonctions, classes, typage
-- [ ] Modèle mental Laravel — MVC, cycle de requête, artisan, Sail
-- [ ] Eloquent & migrations (l'ORM) — analogie Prisma
-- [ ] Routing + Controllers + Form Requests (validation)
-- [ ] Relations Eloquent (belongsTo / hasMany / belongsToMany)
-- [ ] Auth & permissions (spatie/laravel-permission)
-- [ ] Events / Listeners / Notifications (convention XEFI : pas d'Observer)
-- [ ] API REST + JWT + lomkit (Partie II)
+## Phase 1 — Comprendre ✅ (cours écrits dans `cours/`)
+- [x] **PHP pour un dev JS** — syntaxe, variables, tableaux, fonctions, classes, typage
+- [x] Modèle mental Laravel — MVC, cycle de requête, artisan, Sail
+- [x] Eloquent & migrations (l'ORM) — analogie Prisma
+- [x] Routing + Controllers + Form Requests (validation)
+- [x] Relations Eloquent (belongsTo / hasMany / belongsToMany)
+- [x] Auth & permissions (spatie/laravel-permission)
+- [x] Events / Listeners / Notifications (convention XEFI : pas d'Observer)
+- [x] API REST + JWT + lomkit (Partie II)
 
 ## Phase 2 — Construire le projet
 Suivre les étapes StackTim :
