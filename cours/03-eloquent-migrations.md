@@ -158,6 +158,34 @@ sail artisan tinker
 
 ---
 
+## Aide-mémoire — les colonnes de migration
+
+**Types courants** (avec l'équivalent Prisma) :
+
+| Migration | SQL | ≈ Prisma |
+|---|---|---|
+| `id()` | `bigint` auto PK | `@id @default(autoincrement())` |
+| `string('name', 255)` | `VARCHAR` | `String` |
+| `text('description')` | `TEXT` | `String` |
+| `integer` / `unsignedInteger` | `INT` (signé / non) | `Int` |
+| `boolean('active')` | `TINYINT(1)` | `Boolean` |
+| `dateTime` / `date` / `timestamp` | date/heure | `DateTime` |
+| `decimal('prix', 8, 2)` | `DECIMAL` | `Decimal` |
+| `json('meta')` | `JSON` | `Json` |
+| `enum('statut', ['a','b'])` | `ENUM` | `enum` |
+| `foreignId('coach_id')` | `bigint` (FK) | relation |
+
+**Modificateurs à chaîner** : `->nullable()`, `->default(x)`, `->unique()`, `->index()`, `->comment('…')`.
+
+**Clés étrangères** :
+
+```php
+$table->foreignId('coach_id')->constrained('users');            // FK vers users.id
+$table->foreignId('coach_id')->constrained()->cascadeOnDelete(); // + suppression en cascade
+```
+
+**Les « tout-en-un »** : `id()` (PK), `timestamps()` (created_at + updated_at), `softDeletes()` (deleted_at), `rememberToken()` (rester connecté), `morphs('x')` (relation polymorphe → 2 colonnes).
+
 ## À retenir
 
 - **1 Model = 1 table** (convention pluriel). Le model ne décrit pas les colonnes : ce sont les **migrations** (versionnées dans Git) qui construisent le schéma.
