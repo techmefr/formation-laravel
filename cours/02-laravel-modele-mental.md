@@ -104,4 +104,42 @@ sail composer install                             # installe tout composer.json 
 - **Sail** = la boîte Docker ; **artisan** = dedans. Toujours `sail artisan`.
 - **Composer** = npm ; `.env` = secrets non commités ; conventions de nommage partout.
 
+## Questions qui reviennent
+
+### « Le cycle d'une requête, c'est comme Express ? »
+
+Oui — **même modèle mental**, juste un vocabulaire différent. Tout ce que tu sais sur les middleware Express se transpose presque à l'identique.
+
+| Étape | Express | Laravel |
+|---|---|---|
+| Point d'entrée | ton `index.js` (`app.listen`) | `public/index.php` (fourni, tu n'y touches pas) |
+| Chaîne de middleware | `app.use(mw)`, ordre explicite, `next()` | groupes `web`/`api` + middleware de route (`auth`, `guest`, `permission:`), ordre = ordre déclaré |
+| Passer au suivant | `next()` | `return $next($request)` (littéralement le même `next`) |
+| Court-circuit | ne pas appeler `next()` / `res.send()` | ne pas appeler `$next` / renvoyer une réponse |
+| Handler | route → controller | route (`routes/web.php`) → méthode de controller |
+| Base de données | tu écris le SQL | Eloquent (l'ORM) génère le SQL |
+
+Un middleware Laravel a **exactement la même forme** qu'un middleware Express :
+
+```php
+public function handle(Request $request, Closure $next)
+{
+    // AVANT (comme le code avant next() en Express)
+    if (! Auth::check()) {
+        return redirect('/login');   // court-circuit : on n'appelle PAS $next
+    }
+
+    $response = $next($request);     // = next() : passe au maillon suivant
+
+    // APRÈS (on peut agir sur la réponse au retour)
+    return $response;
+}
+```
+
+> 💡 L'ordre des vérifications suit l'ordre des middleware : `['auth', 'permission:delete seances']` → `auth` d'abord, puis `permission`, chacun pouvant stopper la requête.
+
+La **seule vraie différence** avec Express : en Laravel, le pipeline `index.php → middleware → route → controller → Eloquent → réponse` est **pré-câblé**. Tu ne déclares que tes routes + quels middleware s'appliquent.
+
+---
+
 ➡️ Suite : [Cours 3 — Eloquent & les migrations](03-eloquent-migrations.md)

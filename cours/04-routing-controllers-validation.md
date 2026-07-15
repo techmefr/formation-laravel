@@ -173,6 +173,61 @@ $request->input('name'); // un champ brut si besoin
 
 ---
 
+## 6. La couche Service (comme ton front)
+
+Le controller reste **mince** et délègue la logique à une classe **Service**, exactement comme une page front appelle un `authService.ts`.
+
+- **Front** : page/composant → `authService.ts` → API
+- **Back** : Route → Controller → `AuthService` → Model (BDD)
+
+Laravel injecte le service tout seul dans le constructeur du controller (**injection de dépendances**) :
+
+```php
+class AuthController extends Controller
+{
+    public function __construct(private AuthService $auth) {}
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([...]);
+        return $this->auth->register($data);   // logique déléguée
+    }
+}
+```
+
+> 💡 Tu connais déjà le pattern : côté Nest, tu injectes un service dans le constructeur d'un controller et le framework le résout tout seul. Ici c'est pareil — le simple fait de typer `private AuthService $auth` suffit, Laravel fabrique et injecte l'instance. Le controller ne fait que valider et appeler la bonne méthode du service.
+
+---
+
+## 7. Politique de mot de passe (règle dédiée, pas de regex)
+
+En Laravel on n'écrit **pas de regex à la main** : la règle `Password` exprime les critères et donne des messages clairs. On la définit **une seule fois** (via `Password::defaults()` dans `AppServiceProvider::boot()`), puis on l'utilise partout :
+
+```php
+// AppServiceProvider::boot()
+Password::defaults(fn () => Password::min(12)->mixedCase()->numbers()->symbols());
+
+// dans une validation
+'password' => ['required', 'confirmed', Password::defaults()],
+```
+
+`min(12)` = 12 caractères, `mixedCase()` = 1 maj + 1 min, `numbers()` = 1 chiffre, `symbols()` = 1 spécial.
+
+> 💡 Au lieu d'une regex illisible copiée-collée dans chaque schéma de validation, tu déclares la politique **au même endroit pour toute l'app**. Si la règle change (14 caractères demain), tu la modifies une seule fois dans `AppServiceProvider` et tout suit. Bonus : les messages d'erreur sont déjà rédigés et traduits.
+
+---
+
+## 8. Convention : toujours un status + un message
+
+🔴 **Convention XEFI** : chaque réponse renvoie un **type/status** ET un **message humain clair** (prêt pour une notification côté front). Bien distinguer le **code HTTP** (200/201/422/403… pour la machine) du **message** (pour l'humain).
+
+- **Redirection (Blade)** : `->with('notification', ['type' => 'success|error|info', 'message' => '...'])`
+- **Réponse JSON (API)** : `{ "type": "success", "message": "..." }` + le bon code HTTP
+
+> 💡 Le code HTTP parle à la machine (ton front sait qu'un 422 = validation, un 403 = interdit) ; le `message` parle à l'utilisateur et alimente directement ta notif (toast). Les deux ne font pas doublon : tu as besoin des deux à chaque réponse.
+
+---
+
 ## À retenir
 
 - Routes dans `routes/web.php` / `routes/api.php` ; `{param}` = paramètre.

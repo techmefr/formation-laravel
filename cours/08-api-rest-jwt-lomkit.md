@@ -151,6 +151,109 @@ class SeanceResource extends Resource
 
 ---
 
+## En vrai chez StackTim (platform-api)
+
+Le vrai projet StackTim (`platform-api`) applique exactement ce modèle JWT, avec quelques choix concrets qui valent le détour. Voici comment c'est câblé en prod.
+
+### Le guard `api` en driver `jwt` par défaut
+
+Dans `config/auth.php`, le guard **par défaut de l'API est `api`, en driver `jwt`**. Le guard `web` (session) existe toujours, mais ce n'est **pas** le défaut côté API. Le provider `users` pointe sur le model `User`.
+
+```php
+// config/auth.php (idée)
+'defaults' => ['guard' => 'api'],
+'guards' => [
+    'api' => ['driver' => 'jwt', 'provider' => 'users'],
+    'web' => ['driver' => 'session', 'provider' => 'users'],
+],
+'providers' => [
+    'users' => ['driver' => 'eloquent', 'model' => App\Models\User::class],
+],
+```
+
+> 💡 C'est ce qui te permet d'écrire `auth('api')->...` (ou même `auth()->...` puisque `api` est le défaut) partout dans l'API sans repréciser le guard à chaque fois.
+
+### Le model `User` signe le contrat `JWTSubject`
+
+Comme vu en section 2, `User implements JWTSubject`. Concrètement, les deux méthodes sont minimalistes :
+
+```php
+// app/Models/User.php
+public function getJWTIdentifier(): mixed
+{
+    return $this->getKey();       // l'id qui sera encodé dans le token
+}
+
+public function getJWTCustomClaims(): array
+{
+    return [];                     // aucun claim custom
+}
+```
+
+### Pas de login email/mot de passe en prod : c'est Azure OAuth
+
+Le point qui surprend quand on vient de la Partie I : **il n'y a pas de `login` email/mot de passe classique en prod**. L'entrée réelle, c'est **Azure OAuth** via Socialite en mode `stateless()` (logique : une API stateless ne garde pas de session OAuth).
+
+Après le callback Azure, le serveur génère le token depuis le user et le dépose dans un **cookie `access-token`** (durée ~30 min, `sameSite=Lax`) :
+
+```php
+// callback Azure (idée)
+$user = Socialite::driver('azure')->stateless()->user();
+// ... on retrouve/crée le User local ...
+$token = JWTAuth::fromUser($user);
+
+$cookie = cookie('access-token', $token, 30, sameSite: 'Lax', httpOnly: false);
+return redirect($frontUrl)->withCookie($cookie);
+```
+
+> ⚠️ Détail clé : le cookie est **`httpOnly = false`**. Ce n'est pas un oubli — c'est **volontaire** pour que le **front JS puisse lire le cookie** et renvoyer lui-même le header `Authorization: Bearer <token>` à chaque appel. Le serveur ne lit **jamais** le token depuis le cookie.
+
+> 💡 Côté front tu retrouves un réflexe connu (Supabase/NestJS) : tu récupères le JWT, tu le mets dans le header `Authorization` de chaque requête. La seule bizarrerie, c'est que le token transite d'abord par un cookie lisible en JS au lieu d'un corps de réponse JSON.
+
+### Et un login email/mot de passe, alors ?
+
+Pour un login email/mot de passe équivalent (ce qu'on fera en formation, faute d'Azure), l'idiome serait exactement celui de la section 2, déposé dans le même cookie :
+
+```php
+$token = auth('api')->attempt($credentials);
+// puis même dépôt : cookie('access-token', $token, 30, sameSite: 'Lax', httpOnly: false)
+```
+
+### Protéger les routes : le middleware `jwt.auth`
+
+En prod, les groupes de routes sont protégés par le middleware **`jwt.auth`** — l'alias natif fourni par `tymon/jwt-auth`. Il lit le token depuis le header `Authorization: Bearer` (pas depuis le cookie).
+
+```php
+// routes/api.php (idée)
+Route::middleware('jwt.auth')->group(function () {
+    // … endpoints protégés
+});
+```
+
+> ⚠️ Il n'y a **aucun** middleware serveur qui recopie le cookie dans le header `Authorization`. C'est le **front** qui s'en charge (il lit le cookie `access-token` et pose le header lui-même). Le serveur, lui, ne regarde que le header.
+
+### Le trio `refresh` / `logout` / `me`
+
+```php
+public function refresh() { $token = auth()->refresh(true, true); /* re-déposé en cookie access-token */ }
+public function logout()  { auth()->logout(); Cookie::forget('access-token'); }
+public function me()      { return auth()->user()->load(/* relations utiles */); }
+```
+
+### L'autorisation : lomkit access-control
+
+Une fois le user authentifié (JWT), **qui a le droit de faire quoi** passe par `lomkit/laravel-access-control` (les **Controls** et **Perimeters**) — c'est ce qu'on a vu au Cours 6, section « En vrai chez StackTim ». Le partage des rôles :
+- **`lomkit/laravel-rest-api`** génère les endpoints (`search` / `mutate`, cf. section 4).
+- **`lomkit/laravel-access-control`** filtre et autorise (qui voit quoi, qui peut muter quoi).
+
+> 💡 Retiens la séparation nette : **JWT = authentification** (qui es-tu), **access-control = autorisation** (qu'as-tu le droit de faire). Deux couches distinctes, comme `JwtAuthGuard` puis un `RolesGuard`/`CASL` côté NestJS.
+
+---
+
+> **Mise en perspective** : la **Partie II du projet formation** reproduit exactement ce mécanisme — **JWT + guard `api` + lomkit** — en remplaçant simplement **Azure OAuth par un login email/mot de passe**. Tu verras donc le même câblage (token en cookie lisible, header `Authorization` posé côté front, routes protégées par `jwt.auth`, autorisation par lomkit), mais avec une porte d'entrée que tu peux tester en local sans compte Azure.
+
+---
+
 ## À retenir
 
 - API = **stateless**, token JWT dans `Authorization: Bearer` (via `tymon/jwt-auth`, guard `auth:api`).

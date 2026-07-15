@@ -195,6 +195,70 @@ Le client décrit sa requête en JSON via `search` (lecture) et `mutate` (écrit
 
 ---
 
+### 8. `lomkit/laravel-access-control` — autorisation par Control + Perimeters
+
+**Rôle.** Gérer l'autorisation via **Control + Perimeters**, en s'appuyant sur les permissions spatie. Complète `lomkit/laravel-rest-api` (qui *génère* l'API) en fournissant le **filtrage/autorisation** des données exposées.
+
+```bash
+sail composer require lomkit/laravel-access-control
+```
+
+**Comment ça marche.**
+
+- un **Control** par modèle (ex. `SeanceControl`) déclare des **Perimeters** (`GlobalPerimeter`, `OwnPerimeter`…) ;
+- chaque Perimeter expose trois méthodes :
+  - `allowed()` vérifie une permission spatie nommée `{method}_{scope}_{resource}` (ex. `view_seances`, `update_own_seances`),
+  - `should()` teste l'appartenance (ce périmètre s'applique-t-il à cet utilisateur ?),
+  - `query()` filtre les résultats (restreint la requête aux enregistrements autorisés) ;
+- la **Policy** étend `ControlledPolicy` et pointe vers le Control : `protected string $control = SeanceControl::class;` ;
+- le model porte le trait `HasControl` ;
+- la Resource lomkit applique le filtrage via `$query->controlled()`.
+
+```php
+// app/Models/Seance.php
+use Lomkit\Access\Controls\Concerns\HasControl;
+
+class Seance extends Model
+{
+    use HasControl;
+}
+```
+
+```php
+// app/Policies/SeancePolicy.php
+use Lomkit\Access\Policies\ControlledPolicy;
+
+class SeancePolicy extends ControlledPolicy
+{
+    protected string $control = SeanceControl::class;
+}
+```
+
+```php
+// app/Controls/SeanceControl.php — Perimeters
+class OwnPerimeter extends Perimeter
+{
+    public function allowed(Model $user): bool
+    {
+        return $user->can('update_own_seances');   // permission spatie
+    }
+
+    public function should(Model $user, Model $model): bool
+    {
+        return $model->user_id === $user->id;       // appartenance
+    }
+
+    public function query(Builder $query, Model $user): Builder
+    {
+        return $query->where('user_id', $user->id); // filtrage
+    }
+}
+```
+
+> 🔴 Convention StackTim : les permissions atomiques viennent de **spatie**, mais la logique de périmètre + le filtrage des requêtes passent par **lomkit access-control**. Les Policies ne portent pas de logique, elles délèguent au Control.
+
+---
+
 ## Outils qualité & debug (rappel [XEFI 01](xefi-01-conventions.md))
 
 | Package | Install | Usage |

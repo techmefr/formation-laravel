@@ -146,6 +146,61 @@ $this->authorize('update', $seance);   // lève un 403 si refusé
 
 ---
 
+## Questions qui reviennent
+
+**« Breeze, Fortify ou à la main ? »**
+
+Trois façons de brancher l'authentification, du plus « clé en main » au plus artisanal :
+
+- **Breeze** : génère la logique d'auth **ET** les vues (pages login/register). Le code atterrit dans ton projet, visible et modifiable. Analogie : un `create-next-app` qui te livre déjà les pages d'auth écrites.
+- **Fortify** : **headless** — la logique d'auth **sans** les vues. Tu fournis ton propre front (Blade, Vue, Inertia, peu importe). Analogie : un module d'auth NestJS sans templates, tu câbles la couche présentation toi-même.
+- **À la main** : tu écris toi-même controllers, routes et vues. Le plus formateur, mais le plus long.
+
+> 💡 Reco pour débuter **en comprenant** ce qui se passe : **Breeze** (tu lis du vrai code, tu vois comment login/logout sont réellement implémentés). Passe à **Fortify** quand ton front est découplé (SPA, mobile) et que tu veux garder la main sur les vues.
+
+**« Session ou JWT ? »**
+
+Ça dépend de la partie du cours — et surtout du type de front :
+
+- **Partie I (web)** : **session + cookie**, guard `web`. C'est le mode « application web classique » et c'est ce qu'on utilise ici pour apprendre. Le serveur garde l'état de connexion.
+- **Partie II (API)** : **JWT stateless**, guard `api`, pour un front séparé qui parle à l'API. Rien n'est stocké côté serveur : le token porte l'identité. On y arrive au **Cours 8**.
+
+> 💡 Même dualité qu'ailleurs : une app monolithique avec ses pages rendues côté serveur → session. Un front découplé (Nuxt, mobile) qui tape une API → token. Ce n'est pas « l'un est mieux que l'autre », c'est deux contextes différents.
+
+---
+
+## 🔴 En vrai chez StackTim
+
+Tout ce qu'on vient de voir sur les **Policies** reste la version **pédagogique** : on écrit la règle métier à la main pour **comprendre** ce qu'est une autorisation par objet. En production, chez StackTim, on ne fait **pas** ça à la main comme en section 5. On s'appuie sur le package **`lomkit/laravel-access-control`**, posé par-dessus spatie.
+
+L'idée : plutôt que d'écrire des `if` dans chaque Policy, on déclare **où** un utilisateur a le droit d'agir (son « périmètre »), et le package s'occupe du reste — y compris de **filtrer les résultats** des requêtes.
+
+- **Un `Control` par modèle** (ex. `UserControl`) déclare des **Perimeters**. Les plus courants :
+  - `GlobalPerimeter` — a le droit partout (ex. un admin) ;
+  - `OwnedBusinessUnitPerimeter` — seulement dans sa Business Unit ;
+  - `OwnPerimeter` — seulement ses propres ressources.
+- **Chaque Perimeter combine trois choses** :
+  - un **`allowed()`** qui vérifie une **permission spatie** nommée selon la convention `{method}_{scope}_{resource}` (ex. `view_users`, `create_own_users`) ;
+  - un **`should()`** — le test d'appartenance (« cet objet tombe-t-il bien dans ce périmètre ? ») ;
+  - un **`query()`** qui **filtre aussi les résultats** d'une requête selon le périmètre (l'utilisateur ne voit remonter que ce qu'il a le droit de voir).
+- **La Policy devient ultra-mince** : elle étend `ControlledPolicy` et pointe simplement vers son Control.
+
+```php
+// La Policy ne contient plus de logique métier : elle délègue au Control
+class UserPolicy extends ControlledPolicy
+{
+    protected string $control = UserControl::class;
+}
+```
+
+- **Le model porte le trait `HasControl`** (comme il porte `HasRoles` pour spatie).
+
+> 💡 Le partage des rôles : **spatie** fournit les **permissions atomiques** (`view_users`, `create_own_users`…), **lomkit access-control** fournit la **logique de périmètre + le filtrage de requêtes**, et les **Policies délèguent** au Control au lieu de coder la règle en dur.
+
+> ⚠️ La Policy « à la main » de la section 5 n'est donc pas ce que tu écriras en prod — c'est l'étape pour **COMPRENDRE** ce que `lomkit/laravel-access-control` automatise. Un `$seance->coach_id === $user->id` écrit à la main, c'est exactement le genre de règle qu'un `OwnPerimeter` encapsule et applique partout, filtrage des listes compris.
+
+---
+
 ## À retenir
 
 - Auth = identité ; autorisation = droits. `auth()->user()` partout.

@@ -228,6 +228,28 @@ Le model **reflète la ligne** (*Active Record*) : il range les colonnes ramené
 
 Contrepartie assumée : pas de typage statique des champs. Le seul endroit où tu **listes** des colonnes dans le model, c'est `$fillable` — pour la **sécurité**, pas pour définir ce qui existe.
 
+**« `delete()` supprime ou fait un soft delete ? »**
+Il n'existe **pas** deux méthodes : c'est toujours `->delete()`. Son comportement dépend uniquement du **trait** posé sur le model :
+
+| Le model a… | Ce que fait `->delete()` |
+|---|---|
+| `use SoftDeletes;` | `UPDATE … SET deleted_at = now()` (soft) |
+| rien | vrai `DELETE` SQL (la ligne disparaît) |
+
+Pour forcer une vraie suppression **malgré** le trait : `->forceDelete()`. C'est donc le trait (+ la colonne `deleted_at`) qui pilote, pas une méthode à choisir au cas par cas.
+
+**« Pourquoi la migration s'appelle `0001_01_01_000000_create_users_table` ? »**
+C'est un **horodatage** au format `AAAA_MM_JJ_HHMMSS`. Laravel exécute les migrations dans l'**ordre alphabétique** du nom, qui correspond donc à l'ordre chronologique. `0001_01_01` est une date « au tout début des temps » posée **volontairement** par Laravel pour que ses tables de base (`users`, `cache`, `jobs`) passent **toujours en premier**, avant tes migrations à toi (datées 2025/2026). Les secondes (`000000` / `000001` / `000002`) ne servent qu'à ordonner ces 3 tables entre elles.
+
+> 💡 Tu ne nommes **jamais** ce préfixe : `make:migration` génère l'horodatage réel tout seul. C'est exactement le préfixe horodaté des migrations **Prisma**.
+
+**« C'est quoi `#[Fillable([...])]` au-dessus de la classe ? »**
+C'est la **nouvelle syntaxe** (les *attributs* PHP 8) pour déclarer ce que faisait `protected $fillable = [...]` / `protected $hidden = [...]`. Même comportement, forme plus **déclarative** : une métadonnée posée au-dessus de la classe.
+
+> 💡 Analogie directe : les **décorateurs** NestJS / `class-validator` / `class-transformer`. `#[Hidden(['password'])]` ≈ `@Exclude()`. Les deux syntaxes marchent.
+
+⚠️ Le squelette **Laravel 13** de la formation utilise les attributs, mais le vrai projet StackTim (`platform-api`) utilise la forme classique `$fillable` / `$hidden`. Suis toujours la **convention du fichier** sur lequel tu travailles.
+
 ## ⚠️ Les pièges qui piquent au début
 
 1. **Oublier une colonne dans `$fillable`** → `MassAssignmentException` au `create()`. Ce n'est pas un bug : c'est le garde-fou qui fait son travail.
