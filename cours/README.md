@@ -26,6 +26,14 @@ Focalisé sur **ce que fait XEFI** (conventions notées en revue, packages impos
 | X2 | [Packages imposés](xefi-02-packages.md) | spatie, xefi/faker, jwt-auth, lomkit… install + usage |
 | X3 | [Recettes du projet « Séances de sport »](xefi-03-recettes-projet.md) | Chaque feature, pas à pas, aux normes XEFI |
 
+## Tutos (pas à pas — tu codes)
+
+Guides de build où tu écris le code toi-même, étape par étape.
+
+| Tuto | Ce que tu construis |
+|---|---|
+| [L'authentification à la main](tuto-auth-a-la-main.md) | Register / login / logout web (session), sans Breeze/Fortify |
+
 ## Référence
 
 - [laravel-cours.md](laravel-cours.md) — le cours complet condensé (les 13 modules d'origine, en un seul document).

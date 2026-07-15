@@ -84,6 +84,8 @@ Role::firstOrCreate(['name' => 'collaborator']);
 
 3. Auth : Breeze/Fortify pour la Partie I web ; JWT (`tymon/jwt-auth`) pour la Partie II.
 
+> 👉 Version **à la main**, pas à pas : [Tuto — L'authentification à la main](tuto-auth-a-la-main.md).
+
 ---
 
 ## Recette 2 — CRUD séances avec permissions
