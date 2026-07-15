@@ -1,0 +1,13 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+
+    # Niveau d'analyse : 0 (permissif) → 10 (strict). Le Makefile vise >= 5.
+    level: 5
+
+    # Décommente si Larastan n'arrive pas à démarrer l'app pour l'introspection :
+    # bootstrapFiles:
+    #     - bootstrap/app.php
