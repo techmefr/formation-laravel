@@ -29,7 +29,7 @@
             padding: 1.5rem;
             font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
             color: var(--text);
-            background: #0f1424 url('/images/sport-bg.jpg') center center / cover no-repeat fixed;
+            background: #0f1424 url('/images/sport-bg.jpg') center center / cover no-repeat;
         }
         .auth-card {
             width: min(92vw, 25rem);

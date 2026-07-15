@@ -21,7 +21,6 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // Envoie le mail contenant le lien de réinitialisation (capté par Mailpit en local).
         $status = Password::sendResetLink($request->only('email'));
 
         return $status === Password::ResetLinkSent
