@@ -14,6 +14,7 @@ Parcours d'apprentissage pour un dev qui connaît **JS/TS** et débute en **PHP/
 | 6 | [Authentification & permissions](06-auth-permissions.md) | Rôles, permissions Spatie, Policies |
 | 7 | [Events, Listeners & Notifications](07-events-listeners-notifications.md) | Async + mails (convention XEFI clé) |
 | 8 | [API REST, JWT & lomkit](08-api-rest-jwt-lomkit.md) | Partie II du projet |
+| 9 | [Les packages du projet, comment ça marche](09-packages-expliques.md) | Le modèle mental de chaque package du projet |
 
 ## Spécial XEFI — pour être opérationnel vite
 

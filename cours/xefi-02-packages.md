@@ -205,6 +205,11 @@ Le client décrit sa requête en JSON via `search` (lecture) et `mutate` (écrit
 | **Pulse** | prod | métriques prod |
 | **Horizon** | si queues Redis | dashboard des queues |
 
+> 💡 **Telescope ≠ Pulse** — pas le même outil en deux modes, mais **deux jobs différents**.
+> **Telescope** est un enregistreur *fin, par requête* (chaque query SQL avec bindings, l'exception + sa stack, mails, jobs, cache…) → il répond à « qu'est-ce qui s'est passé **exactement** dans cette requête ? ». Lourd (une ligne par événement) et capture des données sensibles → **dev/staging seulement**.
+> **Pulse** est un tableau de bord *agrégé et léger* (requêtes/jobs lents, top exceptions, top utilisateurs, santé serveur) → il répond à « comment se porte l'appli **globalement** ? ». Fait pour la **prod**.
+> On ne peut donc pas « faire juste Pulse avec des env différents » : Pulse n'enregistre pas le détail par requête (tu perdrais l'outil de debug), et Telescope n'a rien à faire en prod (coût + fuite de données). Analogie JS : Telescope ≈ tes DevTools/APM verbeux en local, Pulse ≈ un dashboard type Grafana/Sentry-overview.
+
 ---
 
 ## Ordre d'installation conseillé sur le projet
