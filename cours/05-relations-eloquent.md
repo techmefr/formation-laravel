@@ -149,38 +149,59 @@ sail artisan migrate:fresh --seed   # recrée la base et lance les seeders
 
 ### En pratique avec `xefi/faker-php`
 
-Le faker maison s'instancie comme un simple objet, et tu appelles ses méthodes pour générer des données :
+En Laravel, on installe l'**intégration** — elle fournit un helper `faker()` utilisable partout (factories, seeders) :
 
-```php
-sail composer require xefi/faker-php --dev
+```bash
+sail composer require --dev xefi/faker-php-laravel
 ```
 
-```php
-$faker = new \Xefi\Faker\Faker();
-
-$faker->name();      // "John Doe"        → noms & texte
-$faker->sentence();  // "Yoga du matin…"  → phrases
-$faker->iban();      // un IBAN valide
-```
-
-La factory `Seance` version XEFI (celle du dessus utilisait `fake()` juste pour illustrer) :
+Puis dans une factory, tu appelles `faker()` (⚠️ **pas** `fake()`, ni `new Faker()`) :
 
 ```php
 // database/factories/SeanceFactory.php
 public function definition(): array
 {
-    $faker = new \Xefi\Faker\Faker();   // ← le faker XEFI, pas fake()
-
     return [
-        'name'             => $faker->sentence(),           // texte réaliste
+        'name'             => faker()->words(3),   // "yoga vinyasa matin"
         'coach_id'         => User::factory(),
-        'started_at'       => now()->addDays(rand(1, 30)),  // une date : Carbon suffit
-        'max_participants' => rand(8, 20),
+        'started_at'       => faker()->dateTime(fromTimestamp: 'now', toTimestamp: '+2 months'),
+        'max_participants' => faker()->number(min: 8, max: 20),
     ];
 }
 ```
 
-> 💡 Le principe est le même que `fakerphp/faker` (une méthode = un type de donnée), donc rien de dépaysant. `xefi/faker-php` couvre aussi **dates, nombres, booléens**, plus des modificateurs **`unique()`** (pas de doublon) et **`optional()`** (valeur parfois nulle). Les noms exacts de ces providers/modificateurs sont dans la doc officielle → **faker-php.xefi.com** (à garder sous la main : c'est le package imposé, autant connaître ses méthodes).
+> (L'exemple `fake()->words(2, true)` plus haut, c'était juste pour montrer le principe d'une factory — chez XEFI c'est `faker()`.)
+
+**Les méthodes utiles** (vérifiées sur la doc officielle) :
+
+| Extension | Méthodes | Exemple |
+|---|---|---|
+| person | `name()`, `firstName()`, `lastName()`, `title()` | `faker()->name()` → "Jane Doe" |
+| text | `words(n)`, `sentences(n)`, `paragraphs(n)` | `faker()->sentences(2)` |
+| numbers | `digit()`, `number(min, max)`, `float(min, max, decimals)` | `faker()->number(min: 1, max: 10)` |
+| datetime | `dateTime(from, to)`, `timestamp(from, to)`, `timezone()` | `faker()->dateTime(fromTimestamp: '-1 year', toTimestamp: 'now')` |
+| internet | `email()`, … | `faker()->email()` |
+| financial | `iban()`, … | `faker()->iban()` |
+
+**Modificateurs à chaîner** :
+
+```php
+faker()->unique()->email();   // jamais deux fois la même valeur
+faker()->optional()->name();  // parfois null
+```
+
+**Locale** : la base ne fournit que du **latin**. Pour des données françaises réalistes, ajoute le package de locale :
+
+```bash
+sail composer require --dev xefi/faker-php-locales-fr-fr
+```
+
+```php
+faker()->locale('fr_FR')->name();      // pour un seul appel
+// ou globalement à l'instanciation : new Xefi\Faker\Faker('fr_FR');
+```
+
+> 💡 Même principe que `fakerphp/faker` (une méthode = un type de donnée) — juste le helper `faker()` au lieu de `fake()`. 16 extensions au total (person, text, numbers, datetime, internet, financial, colors, phone, images, geographical…). Réf. **faker-php.xefi.com**.
 
 ---
 
