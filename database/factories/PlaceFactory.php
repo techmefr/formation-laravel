@@ -18,8 +18,8 @@ class PlaceFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake('fr_FR')->city(),
-            'description' => fake('fr_FR')->streetAddress(),
+            'name' => faker()->city(),
+            'description' => faker()->streetAddress(),
             'type' => 'agency',
             'code' => fake()->unique()->regexify('[A-Z0-9]{4}'),
         ];

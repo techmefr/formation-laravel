@@ -151,26 +151,36 @@ sail composer require xefi/faker-php --dev
 
 Objectif : `migrate:fresh --seed` doit produire une appli complète et démontrable (users avec rôles, séances, inscriptions).
 
-**Locale française.** Le package de base sort des données neutres (noms latins). Pour du **FR** (noms, villes, entreprises, SIRET…), installe le package de locale et passe le code `fr_FR` :
+**Intégration Laravel + locale française.** La bonne façon = le package d'intégration Laravel (helper `faker()`) + le package de locale + la locale dans la **config** (pas de `new Faker()` codé en dur) :
 
 ```bash
-sail composer require --dev xefi/faker-php-locales-fr-fr
+sail composer require --dev xefi/faker-php-laravel        # helper faker() + config
+sail composer require --dev xefi/faker-php-locales-fr-fr   # données FR
+```
+
+```dotenv
+# .env — la locale se règle ici (lue via config('app.faker_locale'))
+APP_FAKER_LOCALE=fr_FR
 ```
 
 ```php
-use Xefi\Faker\Faker;
-
-$faker = new Faker('fr_FR');
-$faker->name();     // Laure Jacques
-$faker->city();     // Lille
-$faker->company();  // Alpille Informatique
-$faker->siret();    // 36252187900034
+// dans une factory : on utilise le helper faker() (locale globale, pas d'instanciation)
+public function definition(): array
+{
+    return [
+        'name' => faker()->name(),            // Laure Jacques
+        'email' => faker()->unique()->email(), // faker() gère unique() !
+        'city' => faker()->city(),            // Lille
+    ];
+}
 ```
 
-> ⚠️ **Trois pièges vécus** :
-> 1. Le code de locale est **`fr_FR`** (underscore) — pas `fr-FR`, malgré le commentaire « BCP 47 » du constructeur.
-> 2. Dans un fichier avec `namespace` (une factory), il faut **`use Xefi\Faker\Faker;`** puis `new Faker('fr_FR')`, **ou** l'écrire en absolu `new \Xefi\Faker\Faker('fr_FR')`. Sinon `new Xefi\Faker\Faker(...)` est cherché dans le namespace courant → introuvable. (La doc l'écrit sans `use` car ses exemples sont hors namespace.)
-> 3. Ce faker **n'a pas de `unique()`** : garde `fake()->unique()` (fakerphp) pour les champs uniques (emails, `code` d'agence).
+Le helper `faker()` lit `config('app.faker_locale')` → toutes tes factories parlent FR d'un coup, sans passer la locale à la main.
+
+> ⚠️ **Pièges vécus** :
+> 1. Le code de locale est **`fr_FR`** (underscore), pas `fr-FR` — c'est la valeur de `APP_FAKER_LOCALE`.
+> 2. `faker()` (helper Laravel) **est global** → pas de souci de namespace, et il gère `unique()`. (À ne pas confondre avec `new \Xefi\Faker\Faker('fr_FR')` en direct, qui, lui, aurait besoin du `use` ou du `\`.)
+> 3. Il **manque `regexify`** : pour un code type `[A-Z0-9]{4}`, garde `fake()->unique()->regexify(...)` (fakerphp).
 
 ---
 

@@ -27,6 +27,7 @@
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^12.5.12",
         "xefi/faker-php": "^1.5",
+        "xefi/faker-php-laravel": "^1.2",
         "xefi/faker-php-locales-fr-fr": "^1.1"
     },
     "autoload": {
