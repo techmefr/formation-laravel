@@ -1,0 +1,98 @@
+// Schéma BDD — Séances de sport (tenu à jour au fil du projet)
+// À coller dans https://dbdiagram.io pour visualiser le MLD.
+// Tables d'infra Laravel (cache, jobs, sessions, password_reset_tokens) volontairement omises.
+
+Table users {
+  id bigint [pk, increment]
+  name varchar
+  email varchar [unique]
+  email_verified_at timestamp [null]
+  password varchar
+  remember_token varchar [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table seances {
+  id bigint [pk, increment]
+  name varchar [not null, note: 'Nom de la séance']
+  coach_id bigint [not null, note: 'Coach animant la séance']
+  started_at datetime [not null, note: 'Date et heure de début']
+  ended_at datetime [not null, note: 'Date et heure de fin (durée = ended_at - started_at)']
+  max_participants int [null, note: 'Nb max de participants']
+  recurrence varchar [not null, default: 'none', note: 'none, daily, weekly ou monthly']
+  recurrence_until date [null, note: 'Date de fin de répétition']
+  deleted_at timestamp [null, note: 'Soft delete']
+  created_at timestamp
+  updated_at timestamp
+}
+Ref: seances.coach_id > users.id // une séance appartient à un coach (User)
+
+// --- Fichiers : Spatie Media Library (table polymorphe) ---
+Table media {
+  id bigint [pk, increment]
+  model_type varchar [note: 'ex App Models Seance']
+  model_id bigint [note: 'id du model rattaché, ici une séance']
+  collection_name varchar [note: 'ex files']
+  file_name varchar
+  mime_type varchar
+  disk varchar [note: 's3 MinIO']
+  size bigint
+  created_at timestamp
+  updated_at timestamp
+}
+Ref: media.model_id > seances.id // polymorphe : rattaché aux séances (champ files)
+
+// --- Rôles & permissions : spatie/laravel-permission ---
+Table roles {
+  id bigint [pk, increment]
+  name varchar
+  guard_name varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table permissions {
+  id bigint [pk, increment]
+  name varchar [note: 'ex create seances, update seances, delete seances']
+  guard_name varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table role_has_permissions {
+  permission_id bigint
+  role_id bigint
+  indexes { (permission_id, role_id) [pk] }
+}
+Ref: role_has_permissions.permission_id > permissions.id
+Ref: role_has_permissions.role_id > roles.id
+
+Table model_has_roles {
+  role_id bigint
+  model_type varchar
+  model_id bigint [note: 'ici users.id']
+  indexes { (role_id, model_id, model_type) [pk] }
+}
+Ref: model_has_roles.role_id > roles.id
+Ref: model_has_roles.model_id > users.id // polymorphe : ici les users
+
+Table model_has_permissions {
+  permission_id bigint
+  model_type varchar
+  model_id bigint [note: 'ici users.id']
+  indexes { (permission_id, model_id, model_type) [pk] }
+}
+Ref: model_has_permissions.permission_id > permissions.id
+Ref: model_has_permissions.model_id > users.id
+
+// --- À venir (étape Inscription) : les participants d'une séance ---
+Table seance_user {
+  seance_id bigint
+  user_id bigint
+  created_at timestamp
+  updated_at timestamp
+  indexes { (seance_id, user_id) [pk] }
+}
+Ref: seance_user.seance_id > seances.id
+Ref: seance_user.user_id > users.id

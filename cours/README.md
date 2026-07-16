@@ -33,6 +33,7 @@ Guides de build où tu écris le code toi-même, étape par étape.
 | Tuto | Ce que tu construis |
 |---|---|
 | [L'authentification à la main](tuto-auth-a-la-main.md) | Register / login / logout web (session), sans Breeze/Fortify |
+| [Le CRUD des séances](tuto-seances-crud.md) | Model + Policy + Form Request + controller/service + vues, permissions par rôle |
 
 ## Référence
 
