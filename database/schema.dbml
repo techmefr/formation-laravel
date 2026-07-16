@@ -23,6 +23,7 @@ Table seances {
   max_participants int [null, note: 'Nb max de participants']
   recurrence varchar [not null, default: 'none', note: 'none, daily, weekly ou monthly']
   recurrence_until date [null, note: 'Date de fin de répétition']
+  cancelled_at timestamp [null, note: 'Annulee (null = active)']
   deleted_at timestamp [null, note: 'Soft delete']
   created_at timestamp
   updated_at timestamp
@@ -99,10 +100,12 @@ Table model_has_permissions {
 Ref: model_has_permissions.permission_id > permissions.id
 Ref: model_has_permissions.model_id > users.id
 
-// --- À venir (étape Inscription) : les participants d'une séance ---
+// --- Inscriptions : participants d'une séance (avec file d'attente) ---
 Table seance_user {
   seance_id bigint
   user_id bigint
+  status varchar [not null, note: 'registered ou waitlist']
+  position int [not null, note: 'ordre (file d attente)']
   created_at timestamp
   updated_at timestamp
   indexes { (seance_id, user_id) [pk] }

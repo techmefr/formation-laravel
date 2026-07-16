@@ -8,17 +8,35 @@
 
 ## 0. Où on en est
 
-Déjà en place : l'auth (session), les 3 rôles, et les permissions **`create seances` / `update seances` / `delete seances`** (déjà seedées). Le CRUD s'appuie dessus.
+Déjà en place : l'auth (session) et **4 rôles** (`admin`, `manager`, `coach`, `collaborator`) avec leurs permissions (`create` / `update` / `cancel` / `delete seances`, `manage participants`) — déjà seedées. Le CRUD s'appuie dessus.
 
 Rappel des droits (le cœur de la logique) :
 
-| Rôle | Créer | Modifier | Supprimer |
-|---|---|---|---|
-| Admin | toutes | toutes | toutes |
-| Coach | les siennes | les siennes | **non** |
-| Collaborateur | non | non | non |
+| Rôle | Créer | Modifier | Annuler | Supprimer |
+|---|---|---|---|---|
+| Admin | toutes | toutes | toutes | toutes |
+| Manager | — | toutes | toutes | toutes |
+| Coach | les siennes | les siennes | les siennes | les siennes |
+| Collaborateur | — | — | — | — |
 
-> 💡 Point clé : « les siennes » ne se dit PAS avec une simple permission (une permission est générique : « peut modifier des séances »). Le « CETTE séance est-elle la sienne ? » se décide dans une **Policy** (§4).
+**S'inscrire / se désinscrire** = tout utilisateur connecté, pour lui-même → c'est une action **séparée** (pas le droit `update` de la séance).
+
+> 💡 Point clé : « les siennes » ne se dit PAS avec une simple permission (générique : « peut modifier des séances »). Le « CETTE séance est-elle la sienne ? » se décide dans une **Policy** (§4).
+
+---
+
+## Ordre de construction d'une feature
+
+Toujours dans cet ordre — chaque étape s'appuie sur la précédente :
+
+1. **Model + migration** — l'entité et sa table (`make:model X -m`).
+2. **Factory** — le moule d'une fausse donnée (a besoin du model).
+3. **Permissions & rôles** (seeder) — les droits atomiques (`create/update…`).
+4. **Seeder** — remplir la base (a besoin du model + factory + permissions).
+5. **Policy** — les règles d'autorisation par objet (a besoin du model + permissions).
+6. **CRUD** — Form Requests + Controller + routes + vues (a besoin de tout ce qui précède).
+
+> 💡 Pourquoi cet ordre : on ne peut pas seeder sans model/factory, ni écrire une Policy qui teste des permissions inexistantes, ni brancher un controller sans Policy ni validation. On construit **des fondations vers la surface**.
 
 ---
 
@@ -103,6 +121,10 @@ class Seance extends Model
 ---
 
 ## 4. La Policy — « le coach ne gère que les siennes »
+
+**Qu'est-ce qu'une Policy ?** Une classe qui répond à « **CET utilisateur a-t-il le droit de faire CETTE action sur CET objet ?** ». Une **permission** dit « peut modifier des séances » (générique) ; la **Policy** ajoute la règle **par objet** (« … mais cette séance-ci est-elle la sienne ? »). Une méthode = une action (`create`, `update`, `cancel`, `delete`…) qui renvoie `true`/`false`. Laravel l'appelle via `$this->authorize('update', $seance)` (→ 403 si refusé) ou `@can('update', $seance)` dans une vue, et relie tout seul `Seance` → `SeancePolicy` (convention de nommage).
+
+> 💡 Analogie : la **permission** = ton badge (« tu peux entrer dans les salles de réunion ») ; la **Policy** = le videur qui vérifie en plus que **cette** salle-ci est bien la tienne.
 
 ```bash
 sail artisan make:policy SeancePolicy --model=Seance
@@ -244,6 +266,94 @@ Sur la charte sombre/rouge (comme l'auth) :
 4. Connecté en **collaborateur** : aucun bouton d'écriture.
 5. `make check` vert avant commit.
 
+## 9. L'inscription & la file d'attente
+
+**Le piège à éviter :** s'inscrire, c'est écrire dans la table pivot `seance_user`… donc on serait tenté d'appeler `update` sur la séance. **Non.** Modifier une séance (titre, type) et s'y inscrire sont **deux actions différentes** : un collaborateur doit pouvoir s'inscrire *sans* avoir le droit de modifier la séance. On sépare donc les routes, les controllers et les autorisations.
+
+### Le pivot
+
+`seance_user` n'est pas un simple lien : il porte deux infos par inscription.
+
+```php
+$table->foreignId('seance_id')->constrained()->cascadeOnDelete();
+$table->foreignId('user_id')->constrained()->cascadeOnDelete();
+$table->string('status');        // 'registered' ou 'waitlist'
+$table->unsignedInteger('position');
+$table->timestamps();
+$table->primary(['seance_id', 'user_id']);
+```
+
+Côté model, la relation expose ces colonnes avec `withPivot` (comme un `include` Prisma qui ramènerait les champs de la table de jointure) :
+
+```php
+public function participants(): BelongsToMany
+{
+    return $this->belongsToMany(User::class)
+        ->withPivot('status', 'position')
+        ->withTimestamps();
+}
+```
+
+### La logique dans un Service
+
+Toute la mécanique file d'attente vit dans `InscriptionService` — pas dans le controller.
+
+```php
+public function register(Seance $seance, User $user): void
+{
+    if ($seance->participants()->whereKey($user->id)->exists()) {
+        return; // déjà inscrit, on ne fait rien
+    }
+
+    $status = $seance->isFull() ? 'waitlist' : 'registered';
+    $position = $seance->participants()->count() + 1;
+
+    $seance->participants()->attach($user->id, [
+        'status' => $status,
+        'position' => $position,
+    ]);
+}
+
+public function unregister(Seance $seance, User $user): void
+{
+    $wasRegistered = $seance->participants()
+        ->whereKey($user->id)
+        ->wherePivot('status', 'registered')
+        ->exists();
+
+    $seance->participants()->detach($user->id);
+
+    if ($wasRegistered) {
+        $this->promoteFirstWaitlisted($seance);
+    }
+}
+```
+
+- `isFull()` compte les `registered` et compare à `max_participants` (`null` = illimité).
+- Si c'est plein → on inscrit en `waitlist`.
+- Quand un `registered` se désinscrit → `promoteFirstWaitlisted` prend le **premier de la file** (`orderByPivot('position')`) et le passe en `registered` via `updateExistingPivot`.
+
+### Deux controllers, deux autorisations
+
+| Qui | Route | Controller | Autorisation |
+|-----|-------|------------|--------------|
+| N'importe quel connecté, **pour lui-même** | `POST/DELETE /seances/{seance}/inscription` | `InscriptionController` | aucune (l'`auth` suffit) |
+| admin / manager / coach (sa séance), **pour autrui** | `POST /seances/{seance}/participants`, `DELETE .../participants/{user}` | `ParticipantController` | `$this->authorize('manageParticipants', $seance)` |
+
+```php
+Route::middleware('auth')->group(function () {
+    Route::post('/seances/{seance}/inscription', [InscriptionController::class, 'store'])->name('seances.inscription.store');
+    Route::delete('/seances/{seance}/inscription', [InscriptionController::class, 'destroy'])->name('seances.inscription.destroy');
+
+    Route::post('/seances/{seance}/participants', [ParticipantController::class, 'store'])->name('seances.participants.store');
+    Route::delete('/seances/{seance}/participants/{user}', [ParticipantController::class, 'destroy'])->name('seances.participants.destroy');
+});
+```
+
+`InscriptionController` lit `auth()->user()` — l'utilisateur ne peut agir que sur lui-même, aucune Policy nécessaire. `ParticipantController` reçoit un `user_id` et passe par la Policy `manageParticipants` (même règle « le coach ne gère que ses séances » que §4).
+
+---
+
 ## Checklist
 
 - [ ] Model `Seance` + migration (name, coach_id, started_at, max_participants, softDeletes)
@@ -252,6 +362,9 @@ Sur la charte sombre/rouge (comme l'auth) :
 - [ ] `StoreSeanceRequest` / `UpdateSeanceRequest` (authorize + rules)
 - [ ] `SeanceService` (create / update / delete) + `SeanceController` mince
 - [ ] `Route::resource('seances', ...)` derrière `auth` + permissions
+- [ ] Pivot `seance_user` (status + position) + relation `participants()` avec `withPivot`
+- [ ] `InscriptionService` (register / unregister / promoteFirstWaitlisted)
+- [ ] `InscriptionController` (soi-même) + `ParticipantController` (autrui, Policy `manageParticipants`)
 - [ ] Vues Blade (index / create / edit / show) + toast `notification`
 - [ ] Tests des 4 scénarios de rôles · `make check` vert
 

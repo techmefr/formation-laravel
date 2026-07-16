@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,8 +15,33 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         //
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
-        );
+    ->withExceptions(function (Exceptions $exceptions) {
+
+        $exceptions->render(function (Throwable $e, Request $request) {
+
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            $status = 500;
+
+            if ($e instanceof HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+            }
+
+            return response()->view('errors.generic', [
+                'code' => $status,
+                'message' => match ($status) {
+                    401 => 'Vous devez être connecté pour accéder à cette page.',
+                    403 => 'Vous n’avez pas les droits nécessaires.',
+                    404 => 'La page demandée est introuvable.',
+                    419 => 'Votre session a expiré.',
+                    429 => 'Trop de requêtes. Veuillez patienter.',
+                    500 => 'Une erreur interne est survenue.',
+                    503 => 'Le service est momentanément indisponible.',
+                    default => 'Une erreur est survenue.',
+                },
+            ], $status);
+
+        });
     })->create();

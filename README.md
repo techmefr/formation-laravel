@@ -1,58 +1,108 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Formation Laravel StackTim — « Séances de sport »
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Projet fil rouge de la formation Laravel StackTim (XEFI) : une application de gestion de **séances de sport** où des collaborateurs s'inscrivent aux séances animées par des coachs.
 
-## About Laravel
+Le repo sert deux buts :
+- **apprendre** Laravel en partant d'un profil JS/TS (voir le dossier [`cours/`](cours/README.md)) ;
+- **construire** l'application pas à pas, aux conventions XEFI.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **PHP 8.4** · **Laravel 13**
+- **Laravel Sail** (Docker) pour l'environnement local
+- **MySQL** en base
+- **Blade** + sessions pour l'auth (Partie I) — JWT / lomkit prévus en Partie II
+- **spatie/laravel-permission** (rôles & permissions), **xefi/faker** (données de seed FR)
+- Qualité : **Pint** (format), **Larastan** niveau 5 (analyse statique), **PHPUnit** (tests)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Domaine
 
-## Learning Laravel
+Quatre rôles :
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Rôle | Peut |
+|---|---|
+| `admin` | tout : créer / modifier / annuler / supprimer toute séance, gérer les participants |
+| `manager` | admin des coachs : modifier / annuler / supprimer toute séance, gérer les participants |
+| `coach` | créer ses séances, et modifier / annuler / supprimer **les siennes** |
+| `collaborator` | consulter et **s'inscrire / se désinscrire** |
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Règles clés :
+- **S'inscrire n'est pas modifier** : un collaborateur s'inscrit à une séance sans avoir le droit de la modifier (routes et autorisations séparées).
+- admin / manager / coach (sur ses séances) peuvent inscrire ou désinscrire **n'importe qui**.
+- **File d'attente** : au-delà de `max_participants`, l'inscription passe en `waitlist` ; à la désinscription d'un inscrit, le premier de la file est promu automatiquement.
+- **Annuler ≠ supprimer** : une annulation pose un `cancelled_at` (la séance reste visible, marquée annulée).
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Démarrer
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Prérequis : Docker + Docker Compose.
 
 ```bash
-composer require laravel/boost --dev
+# 1. Dépendances + clé d'application (après un clone)
+make install
 
-php artisan boost:install
+# 2. Démarrer les conteneurs
+make up
+
+# 3. Base de données + données de démo (rôles, users, séances, inscriptions)
+make fresh
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+L'application est ensuite disponible sur le port défini dans `.env` (`APP_PORT`).
 
-## Contributing
+### Comptes de démo (mot de passe `password`)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Email | Rôle |
+|---|---|
+| `admin@example.com` | admin |
+| `manager@example.com` | manager |
+| `coach@example.com` | coach |
+| `collab@example.com` | collaborator |
 
-## Code of Conduct
+## Commandes utiles (`make help`)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Commande | Effet |
+|---|---|
+| `make up` / `make down` | démarre / arrête les conteneurs |
+| `make fresh` | recrée la base + seeders (⚠️ efface les données) |
+| `make seed` | relance les seeders |
+| `make migrate` | applique les migrations |
+| `make tinker` | REPL sur l'application |
+| `make test` | lance les tests |
+| `make pint` | formate le code |
+| `make stan` | analyse statique (Larastan ≥ 5) |
+| `make check` | **Pint + Larastan + tests** — à passer avant chaque commit |
 
-## Security Vulnerabilities
+## Structure du back
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```
+app/
+  Http/Controllers/
+    Auth/                     # register / login / logout / reset (à la main, sessions)
+    InscriptionController     # s'inscrire / se désinscrire soi-même
+    ParticipantController     # inscrire / désinscrire autrui (Policy manageParticipants)
+  Services/
+    AuthService               # logique d'auth
+    InscriptionService        # inscription + file d'attente (register / unregister / promote)
+  Models/                     # Seance, User, Place, Media
+  Policies/SeancePolicy       # « le coach ne gère que ses séances »
+database/
+  migrations/                 # users, séances, places, pivot seance_user, permissions spatie
+  seeders/                    # rôles+permissions, users, places, séances + inscriptions
+  factories/                  # xefi/faker (locale fr_FR)
+  schema.dbml                 # schéma pour dbdiagram.io
+routes/web.php                # auth + inscription + participants
+```
 
-## License
+## Apprentissage
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- [`cours/README.md`](cours/README.md) — le parcours complet (PHP pour dev JS → Eloquent → auth/permissions → API/JWT) + les recettes XEFI et les tutos de build.
+- [`PROGRESSION.md`](PROGRESSION.md) — le suivi d'avancement du projet.
+
+## État d'avancement
+
+- ✅ Authentification web (register / login / logout / reset), à la main
+- ✅ Rôles & permissions (spatie), séances + places, seeders
+- ✅ Inscription / désinscription + file d'attente (Service, controllers, Policy)
+- 🚧 CRUD des séances côté back (SeanceController / Service / Form Requests / route `cancel`) et vues Blade
+- 🚧 Front : page calendrier (semaine, inscription, filtre par agence)
+- 🔜 Notifications · Partie II (API REST / JWT / lomkit)

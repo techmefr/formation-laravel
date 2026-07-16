@@ -13,16 +13,66 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $create = Permission::firstOrCreate(['name' => 'create seances']);
-        $update = Permission::firstOrCreate(['name' => 'update seances']);
-        $delete = Permission::firstOrCreate(['name' => 'delete seances']);
+        $create = Permission::firstOrCreate([
+            'name' => 'create seances',
+            'guard_name' => 'web',
+        ]);
 
-        Role::firstOrCreate(['name' => 'admin'])
-            ->syncPermissions([$create, $update, $delete]);
+        $update = Permission::firstOrCreate([
+            'name' => 'update seances',
+            'guard_name' => 'web',
+        ]);
 
-        Role::firstOrCreate(['name' => 'coach'])
-            ->syncPermissions([$create, $update]);
+        $cancel = Permission::firstOrCreate([
+            'name' => 'cancel seances',
+            'guard_name' => 'web',
+        ]);
 
-        Role::firstOrCreate(['name' => 'collaborator']);
+        $delete = Permission::firstOrCreate([
+            'name' => 'delete seances',
+            'guard_name' => 'web',
+        ]);
+
+        $manageParticipants = Permission::firstOrCreate([
+            'name' => 'manage participants',
+            'guard_name' => 'web',
+        ]);
+
+        Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'web',
+        ])->syncPermissions([
+            $create,
+            $update,
+            $cancel,
+            $delete,
+            $manageParticipants,
+        ]);
+
+        Role::firstOrCreate([
+            'name' => 'manager',
+            'guard_name' => 'web',
+        ])->syncPermissions([
+            $update,
+            $cancel,
+            $delete,
+            $manageParticipants,
+        ]);
+
+        Role::firstOrCreate([
+            'name' => 'coach',
+            'guard_name' => 'web',
+        ])->syncPermissions([
+            $create,
+            $update,
+            $cancel,
+            $delete,
+            $manageParticipants,
+        ]);
+
+        Role::firstOrCreate([
+            'name' => 'collaborator',
+            'guard_name' => 'web',
+        ]);
     }
 }

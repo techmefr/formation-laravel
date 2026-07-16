@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "laravel/folio": "^1.1",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
         "lomkit/laravel-rest-api": "^2.22",
