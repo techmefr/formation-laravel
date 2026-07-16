@@ -151,6 +151,27 @@ sail composer require xefi/faker-php --dev
 
 Objectif : `migrate:fresh --seed` doit produire une appli complète et démontrable (users avec rôles, séances, inscriptions).
 
+**Locale française.** Le package de base sort des données neutres (noms latins). Pour du **FR** (noms, villes, entreprises, SIRET…), installe le package de locale et passe le code `fr_FR` :
+
+```bash
+sail composer require --dev xefi/faker-php-locales-fr-fr
+```
+
+```php
+use Xefi\Faker\Faker;
+
+$faker = new Faker('fr_FR');
+$faker->name();     // Laure Jacques
+$faker->city();     // Lille
+$faker->company();  // Alpille Informatique
+$faker->siret();    // 36252187900034
+```
+
+> ⚠️ **Trois pièges vécus** :
+> 1. Le code de locale est **`fr_FR`** (underscore) — pas `fr-FR`, malgré le commentaire « BCP 47 » du constructeur.
+> 2. Dans un fichier avec `namespace` (une factory), il faut **`use Xefi\Faker\Faker;`** puis `new Faker('fr_FR')`, **ou** l'écrire en absolu `new \Xefi\Faker\Faker('fr_FR')`. Sinon `new Xefi\Faker\Faker(...)` est cherché dans le namespace courant → introuvable. (La doc l'écrit sans `use` car ses exemples sont hors namespace.)
+> 3. Ce faker **n'a pas de `unique()`** : garde `fake()->unique()` (fakerphp) pour les champs uniques (emails, `code` d'agence).
+
 ---
 
 ## Partie II — API REST

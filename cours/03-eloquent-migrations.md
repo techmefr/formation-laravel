@@ -250,6 +250,25 @@ C'est la **nouvelle syntaxe** (les *attributs* PHP 8) pour déclarer ce que fais
 
 ⚠️ Le squelette **Laravel 13** de la formation utilise les attributs, mais le vrai projet StackTim (`platform-api`) utilise la forme classique `$fillable` / `$hidden`. Suis toujours la **convention du fichier** sur lequel tu travailles.
 
+**« C'est quoi `up()` et `down()` dans une migration ? »**
+Une migration est **réversible** :
+- **`up()`** = ce qu'on fait quand on **applique** la migration (créer la table + colonnes). Lancé par `sail artisan migrate`.
+- **`down()`** = l'**inverse**, pour **annuler** (`Schema::dropIfExists('seances')`). Lancé par `sail artisan migrate:rollback`.
+
+Pour un `create`, `make:migration` remplit déjà le `down()` — tu ne touches qu'au `up()`.
+
+> 💡 Analogie : le `up`/`down` des migrations Knex/TypeORM. Pense **`up` = installer / `down` = désinstaller**.
+
+⚠️ Ne pas confondre avec `make up` / `make down` (Docker) : ceux-là **démarrent/arrêtent les conteneurs** (aucune perte de données). Le `down` d'une migration **détruit la table** → les données dedans partent avec.
+
+**« Plusieurs migrations dans la même journée ? »**
+Oui, c'est normal (une migration = un petit changement). L'horodatage est précis à la **seconde** (`AAAA_MM_JJ_HHMMSS`), donc deux migrations le même jour ont des noms différents et s'appliquent dans l'ordre de création. `make:migration` pose ce préfixe tout seul.
+
+**« À quoi sert l'ordre des migrations ? »**
+Certaines tables **dépendent** d'autres. Ta table `seances` a une clé étrangère `coach_id` → `users` : la table `users` doit donc **exister avant**. Laravel exécute les migrations dans l'ordre de leur horodatage (le plus ancien d'abord), donc si tu les crées dans l'ordre logique, ça tombe juste.
+
+> Règle simple : **crée d'abord la table « parente », ensuite celle qui la référence.** (Ex. `seance_user` viendra après `seances` **et** `users`.)
+
 ## ⚠️ Les pièges qui piquent au début
 
 1. **Oublier une colonne dans `$fillable`** → `MassAssignmentException` au `create()`. Ce n'est pas un bug : c'est le garde-fou qui fait son travail.

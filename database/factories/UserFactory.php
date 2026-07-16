@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Xefi\Faker\Faker;
 
 /**
  * @extends Factory<User>
@@ -24,8 +25,10 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $faker = new Faker('fr_FR');
+
         return [
-            'name' => fake()->name(),
+            'name' => $faker->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
