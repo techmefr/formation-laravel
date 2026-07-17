@@ -33,7 +33,7 @@ $endedAt = old('ended_at', $seance?->ended_at?->format('Y-m-d\TH:i'));
         <a href="{{ route('seances.show', ['seance' => $seance?->id]) }}" class="mb-4 inline-block text-sm text-base-content/70 hover:text-base-content">← Retour</a>
         <h1 class="mb-5 text-2xl font-extrabold">Modifier la séance</h1>
 
-        <form method="POST" action="{{ route('seances.update', ['seance' => $seance?->id]) }}" class="flex flex-col gap-4">
+        <form method="POST" action="{{ route('seances.update', ['seance' => $seance?->id]) }}" enctype="multipart/form-data" class="flex flex-col gap-4">
             @csrf
             @method('PUT')
 
@@ -82,6 +82,23 @@ $endedAt = old('ended_at', $seance?->ended_at?->format('Y-m-d\TH:i'));
                 <span class="text-sm font-semibold">Nombre de places (vide = illimité)</span>
                 <input type="number" name="max_participants" min="1" value="{{ old('max_participants', $seance?->max_participants) }}" class="input input-bordered w-full">
                 @error('max_participants') <span class="text-xs text-error">{{ $message }}</span> @enderror
+            </label>
+
+            @if ($seance && $seance->getMedia('files')->isNotEmpty())
+                <div class="text-sm">
+                    <span class="font-semibold">Fichiers actuels :</span>
+                    <ul class="mt-1 flex flex-col gap-1">
+                        @foreach ($seance->getMedia('files') as $media)
+                            <li><a href="{{ $media->getUrl() }}" target="_blank" class="text-primary hover:underline">{{ $media->file_name }}</a></li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <label class="flex flex-col gap-1">
+                <span class="text-sm font-semibold">Ajouter des fichiers (optionnel)</span>
+                <input type="file" name="files[]" multiple class="file-input file-input-bordered w-full">
+                @error('files.*') <span class="text-xs text-error">{{ $message }}</span> @enderror
             </label>
 
             <div class="mt-2 flex gap-2">

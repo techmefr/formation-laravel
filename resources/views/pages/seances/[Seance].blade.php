@@ -84,6 +84,17 @@ $isFull = $seance?->isFull() ?? false;
                     <p class="mt-4 text-sm text-base-content/70">{{ $seance->place->description }}</p>
                 @endif
 
+                @if ($seance && $seance->getMedia('files')->isNotEmpty())
+                    <div class="mt-4">
+                        <div class="text-xs uppercase text-base-content/50">Fichiers</div>
+                        <ul class="mt-1 flex flex-col gap-1">
+                            @foreach ($seance->getMedia('files') as $media)
+                                <li><a href="{{ $media->getUrl() }}" target="_blank" class="text-sm text-primary hover:underline">{{ $media->file_name }}</a></li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <div class="mt-6">
                     @if ($isCancelled)
                         <p class="text-sm text-base-content/60">Cette séance est annulée, les inscriptions sont fermées.</p>

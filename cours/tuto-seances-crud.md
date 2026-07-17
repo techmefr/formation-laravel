@@ -510,6 +510,57 @@ La `Notification` (canal `mail`) construit le message dans `toMail()`. En dev, t
 
 ---
 
+## 14. Upload de fichiers (spatie/laravel-medialibrary)
+
+Une séance peut porter des **fichiers** (champ `files` du cahier des charges). On utilise **spatie/laravel-medialibrary** (déjà installé).
+
+Mise en place :
+- `sail artisan vendor:publish --tag=medialibrary-migrations` puis `sail artisan migrate` → table `media`.
+- `sail artisan storage:link` → le disque `public` sert les fichiers via `/storage/…`.
+- Le model implémente `HasMedia` + le trait `InteractsWithMedia` :
+
+```php
+class Seance extends Model implements HasMedia
+{
+    use HasFactory, InteractsWithMedia, SoftDeletes;
+}
+```
+
+Le formulaire passe en **`multipart/form-data`** avec `<input type="file" name="files[]" multiple>`. La validation (Form Request) :
+
+```php
+'files' => ['nullable', 'array'],
+'files.*' => ['file', 'max:5120'],
+```
+
+Le controller **sépare** les données du model des fichiers, puis attache via le Service :
+
+```php
+$seance = $this->seances->create($request->safe()->except('files'));
+$this->seances->attachFiles($seance, $request->file('files', []));
+```
+
+```php
+public function attachFiles(Seance $seance, array $files): void
+{
+    foreach ($files as $file) {
+        $seance->addMedia($file)->toMediaCollection('files');
+    }
+}
+```
+
+Affichage / téléchargement dans la vue :
+
+```blade
+@foreach ($seance->getMedia('files') as $media)
+    <a href="{{ $media->getUrl() }}" target="_blank">{{ $media->file_name }}</a>
+@endforeach
+```
+
+> 💡 On stocke sur le disque **`public`** (le plus simple, marche direct après `storage:link`). En prod XEFI, on basculerait sur **S3/MinIO** en changeant `media-library.disk_name` — le code du model/controller/vue ne bouge pas.
+
+---
+
 ## Checklist
 
 - [ ] Model `Seance` + migration (name, coach_id, started_at, max_participants, softDeletes)
@@ -526,6 +577,7 @@ La `Notification` (canal `mail`) construit le message dans `toMail()`. En dev, t
 - [ ] Calendrier FullCalendar (page Folio + flux `CalendarController@events` + `calendar.js` bundlé Vite)
 - [ ] Coach = ne voit que ses cours · couleur + **libellé** de statut (RGAA : jamais la couleur seule)
 - [ ] Notifications mail (events `SeanceCreated`/`SeanceCancelled` + listeners + `Notification` mail → Mailpit)
+- [ ] Upload fichiers (`HasMedia` + `InteractsWithMedia`, form multipart, `addMedia()->toMediaCollection('files')`, `getMedia()` en vue)
 - [ ] Pages Folio (calendrier / create / edit / détail) + toast `notification` · focus visible · responsive
 - [ ] Tests des 4 scénarios de rôles · `make check` vert
 

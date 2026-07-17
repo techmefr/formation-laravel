@@ -14,7 +14,8 @@ class SeanceController extends Controller
 
     public function store(StoreSeanceRequest $request): RedirectResponse
     {
-        $this->seances->create($request->validated());
+        $seance = $this->seances->create($request->safe()->except('files'));
+        $this->seances->attachFiles($seance, $request->file('files', []));
 
         return redirect()->route('seances.index')
             ->with('notification', ['type' => 'success', 'message' => 'Séance créée.']);
@@ -22,7 +23,8 @@ class SeanceController extends Controller
 
     public function update(UpdateSeanceRequest $request, Seance $seance): RedirectResponse
     {
-        $this->seances->update($seance, $request->validated());
+        $this->seances->update($seance, $request->safe()->except('files'));
+        $this->seances->attachFiles($seance, $request->file('files', []));
 
         return redirect()->route('seances.index')
             ->with('notification', ['type' => 'success', 'message' => 'Séance modifiée.']);

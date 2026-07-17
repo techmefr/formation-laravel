@@ -37,6 +37,8 @@ class UpdateSeanceRequest extends FormRequest
             'started_at' => ['required', 'date'],
             'ended_at' => ['required', 'date', 'after:started_at'],
             'max_participants' => ['nullable', 'integer', 'min:1'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'max:5120'],
         ];
     }
 }

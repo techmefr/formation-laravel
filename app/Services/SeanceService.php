@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\SeanceCancelled;
 use App\Events\SeanceCreated;
 use App\Models\Seance;
+use Illuminate\Http\UploadedFile;
 
 class SeanceService
 {
@@ -26,6 +27,16 @@ class SeanceService
     public function update(Seance $seance, array $data): void
     {
         $seance->update($data);
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $files
+     */
+    public function attachFiles(Seance $seance, array $files): void
+    {
+        foreach ($files as $file) {
+            $seance->addMedia($file)->toMediaCollection('files');
+        }
     }
 
     public function cancel(Seance $seance): void

@@ -24,7 +24,7 @@ $isStaff = auth()->user()?->hasAnyRole(['admin', 'manager']) ?? false;
         <a href="{{ route('seances.index') }}" class="mb-4 inline-block text-sm text-base-content/70 hover:text-base-content">← Retour</a>
         <h1 class="mb-5 text-2xl font-extrabold">Nouvelle séance</h1>
 
-        <form method="POST" action="{{ route('seances.store') }}" class="flex flex-col gap-4">
+        <form method="POST" action="{{ route('seances.store') }}" enctype="multipart/form-data" class="flex flex-col gap-4">
             @csrf
 
             <label class="flex flex-col gap-1">
@@ -74,6 +74,12 @@ $isStaff = auth()->user()?->hasAnyRole(['admin', 'manager']) ?? false;
                 <span class="text-sm font-semibold">Nombre de places (vide = illimité)</span>
                 <input type="number" name="max_participants" min="1" value="{{ old('max_participants') }}" class="input input-bordered w-full">
                 @error('max_participants') <span class="text-xs text-error">{{ $message }}</span> @enderror
+            </label>
+
+            <label class="flex flex-col gap-1">
+                <span class="text-sm font-semibold">Fichiers (optionnel)</span>
+                <input type="file" name="files[]" multiple class="file-input file-input-bordered w-full">
+                @error('files.*') <span class="text-xs text-error">{{ $message }}</span> @enderror
             </label>
 
             <div class="mt-2 flex gap-2">
