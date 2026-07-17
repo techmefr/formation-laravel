@@ -17,6 +17,15 @@ $places = Place::orderBy('name')->get();
 $coaches = User::role('coach')->orderBy('name')->get();
 $isStaff = auth()->user()?->hasAnyRole(['admin', 'manager']) ?? false;
 
+$defaultPlace = old('place_id', request('place_id'));
+$defaultStart = old('started_at');
+$defaultEnd = old('ended_at');
+
+if ($defaultStart === null && request('date') !== null && request('start') !== null) {
+    $defaultStart = request('date').'T'.request('start');
+    $defaultEnd = request('date').'T'.\Illuminate\Support\Carbon::parse(request('start'))->addHour()->format('H:i');
+}
+
 ?>
 
 <x-app-layout title="Nouvelle séance">
@@ -38,7 +47,7 @@ $isStaff = auth()->user()?->hasAnyRole(['admin', 'manager']) ?? false;
                 <select name="place_id" required class="select select-bordered w-full">
                     <option value="">Choisir un lieu…</option>
                     @foreach ($places as $place)
-                        <option value="{{ $place->id }}" @selected(old('place_id') == $place->id)>{{ $place->name }} ({{ $place->type === 'external' ? 'externe' : 'agence' }})</option>
+                        <option value="{{ $place->id }}" @selected((string) $defaultPlace === (string) $place->id)>{{ $place->name }} ({{ $place->type === 'external' ? 'externe' : 'agence' }})</option>
                     @endforeach
                 </select>
                 @error('place_id') <span class="text-xs text-error">{{ $message }}</span> @enderror
@@ -60,12 +69,12 @@ $isStaff = auth()->user()?->hasAnyRole(['admin', 'manager']) ?? false;
             <div class="grid gap-4 sm:grid-cols-2">
                 <label class="flex flex-col gap-1">
                     <span class="text-sm font-semibold">Début</span>
-                    <input type="datetime-local" name="started_at" value="{{ old('started_at') }}" required class="input input-bordered w-full">
+                    <input type="datetime-local" name="started_at" value="{{ $defaultStart }}" required class="input input-bordered w-full">
                     @error('started_at') <span class="text-xs text-error">{{ $message }}</span> @enderror
                 </label>
                 <label class="flex flex-col gap-1">
                     <span class="text-sm font-semibold">Fin</span>
-                    <input type="datetime-local" name="ended_at" value="{{ old('ended_at') }}" required class="input input-bordered w-full">
+                    <input type="datetime-local" name="ended_at" value="{{ $defaultEnd }}" required class="input input-bordered w-full">
                     @error('ended_at') <span class="text-xs text-error">{{ $message }}</span> @enderror
                 </label>
             </div>

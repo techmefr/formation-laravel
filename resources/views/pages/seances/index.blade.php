@@ -24,6 +24,10 @@ $defaultAgency = $myAgencyId !== null ? (string) $myAgencyId : 'all';
                 <p class="text-sm text-base-content/70">
                     {{ $isCoach ? 'Les cours que vous animez' : 'Calendrier des cours de sport' }}
                 </p>
+                <nav class="mt-2 flex gap-1">
+                    <span class="btn btn-primary btn-sm">Calendrier</span>
+                    <a href="{{ route('seances.jour') }}" class="btn btn-ghost btn-sm">Jour par lieu</a>
+                </nav>
             </div>
 
             @unless ($isCoach)

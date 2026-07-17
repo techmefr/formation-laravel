@@ -11,7 +11,9 @@ use App\Http\Controllers\SeanceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return auth()->check()
+        ? redirect()->route('seances.index')
+        : redirect()->route('login');
 });
 
 Route::middleware('guest')->group(function () {
@@ -30,7 +32,6 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-    Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
 
     Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
 
