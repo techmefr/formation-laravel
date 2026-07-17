@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const agencySelect = document.getElementById('agency-filter');
     const mineCheckbox = document.getElementById('mine-filter');
+    const canCreate = el.dataset.canCreate === '1';
 
     const buildUrl = () => {
         const url = new URL(el.dataset.eventsUrl, window.location.origin);
@@ -58,6 +59,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 info.jsEvent.preventDefault();
                 window.location.href = info.event.url;
             }
+        },
+        dateClick(info) {
+            if (!canCreate) {
+                return;
+            }
+
+            const [datePart, timePart] = info.dateStr.split('T');
+            const start = timePart ? timePart.slice(0, 5) : '08:00';
+            const url = new URL(el.dataset.createUrl, window.location.origin);
+            url.searchParams.set('date', datePart);
+            url.searchParams.set('start', start);
+            window.location.href = url.toString();
         },
     });
 

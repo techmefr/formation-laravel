@@ -67,7 +67,9 @@ $defaultAgency = $myAgencyId !== null ? (string) $myAgencyId : 'all';
         <div id="calendar"
              data-events-url="{{ route('calendar.events') }}"
              data-agency="{{ $defaultAgency }}"
-             data-initial-view="timeGridWeek"></div>
+             data-initial-view="timeGridWeek"
+             data-create-url="{{ route('seances.create') }}"
+             data-can-create="{{ auth()->user()?->can('create', App\Models\Seance::class) ? '1' : '' }}"></div>
     </section>
 
     @push('scripts')
