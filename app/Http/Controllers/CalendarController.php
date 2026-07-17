@@ -46,7 +46,7 @@ class CalendarController extends Controller
 
             return [
                 'id' => $seance->id,
-                'title' => $this->marker($status).' '.$seance->name.' · '.$seance->place->name,
+                'title' => $seance->name.' · '.$seance->place->name.$this->label($status),
                 'start' => $seance->started_at->toIso8601String(),
                 'end' => $seance->ended_at?->toIso8601String(),
                 'url' => route('seances.show', ['seance' => $seance->id]),
@@ -80,22 +80,22 @@ class CalendarController extends Controller
     private function color(string $status): string
     {
         return match ($status) {
-            'registered' => '#22c55e',
-            'waitlist' => '#f59e0b',
+            'registered' => '#0ea5e9',
+            'waitlist' => '#eab308',
             'full' => '#c8102e',
             'cancelled' => '#6b7280',
-            default => '#0ea5e9',
+            default => '#22c55e',
         };
     }
 
-    private function marker(string $status): string
+    private function label(string $status): string
     {
         return match ($status) {
-            'registered' => '✓',
-            'waitlist' => '⏳',
-            'full' => '●',
-            'cancelled' => '⊘',
-            default => '○',
+            'registered' => ' (inscrit)',
+            'waitlist' => " (liste d'attente)",
+            'full' => ' (complet)',
+            'cancelled' => ' (annulée)',
+            default => '',
         };
     }
 }

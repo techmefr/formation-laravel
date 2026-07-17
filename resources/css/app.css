@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './midnight-bloom.css';
 @plugin 'daisyui';
 
 @plugin 'daisyui/theme' {
@@ -45,6 +46,25 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+    }
+}
+
+/* Midnight bloom : degrade + bruit importes de midnight-bloom.css, rendus fixes + animes ici */
+.gradient-yozaki {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    background-size: 300% 300%;
+    animation: yozaki-flow 36s ease-in-out infinite;
+}
+
+@keyframes yozaki-flow {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
     }
 }
 

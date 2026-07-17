@@ -106,6 +106,29 @@ $isFull = $seance?->isFull() ?? false;
                         </form>
                     @endif
                 </div>
+
+                @canany(['update', 'cancel', 'delete'], $seance)
+                    <div class="mt-6 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                        @can('update', $seance)
+                            <a href="{{ route('seances.edit', ['seance' => $seance->id]) }}" class="btn btn-outline btn-sm">Modifier</a>
+                        @endcan
+                        @can('cancel', $seance)
+                            @unless ($isCancelled)
+                                <form method="POST" action="{{ route('seances.cancel', ['seance' => $seance->id]) }}" onsubmit="return confirm('Annuler cette séance ?')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline btn-warning btn-sm">Annuler la séance</button>
+                                </form>
+                            @endunless
+                        @endcan
+                        @can('delete', $seance)
+                            <form method="POST" action="{{ route('seances.destroy', ['seance' => $seance->id]) }}" onsubmit="return confirm('Supprimer définitivement cette séance ?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline btn-error btn-sm">Supprimer</button>
+                            </form>
+                        @endcan
+                    </div>
+                @endcanany
             </div>
         </div>
 

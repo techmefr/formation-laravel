@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const calendar = new Calendar(el, {
         plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
         locale: frLocale,
+        timeZone: 'UTC',
         initialView: el.dataset.initialView || 'timeGridWeek',
         headerToolbar: {
             left: 'prev,next today',

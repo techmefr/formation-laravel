@@ -44,14 +44,18 @@ $defaultAgency = $myAgencyId !== null ? (string) $myAgencyId : 'all';
                     </label>
                 </div>
             @endunless
+
+            @can('create', App\Models\Seance::class)
+                <a href="{{ route('seances.create') }}" class="btn btn-primary btn-sm">+ Nouvelle séance</a>
+            @endcan
         </div>
 
         <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-xs font-medium text-base-content/85">
-            <span class="flex items-center gap-1.5"><span aria-hidden="true">○</span><span class="inline-block h-3 w-3 rounded" style="background:#0ea5e9"></span> Disponible</span>
-            <span class="flex items-center gap-1.5"><span aria-hidden="true">●</span><span class="inline-block h-3 w-3 rounded" style="background:#c8102e"></span> Complet</span>
-            <span class="flex items-center gap-1.5"><span aria-hidden="true">✓</span><span class="inline-block h-3 w-3 rounded" style="background:#22c55e"></span> Inscrit</span>
-            <span class="flex items-center gap-1.5"><span aria-hidden="true">⏳</span><span class="inline-block h-3 w-3 rounded" style="background:#f59e0b"></span> Liste d'attente</span>
-            <span class="flex items-center gap-1.5"><span aria-hidden="true">⊘</span><span class="inline-block h-3 w-3 rounded" style="background:#6b7280"></span> Annulée</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded" style="background:#22c55e"></span> Disponible</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded" style="background:#c8102e"></span> Complet</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded" style="background:#0ea5e9"></span> Inscrit</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded" style="background:#eab308"></span> Liste d'attente</span>
+            <span class="flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded" style="background:#6b7280"></span> Annulée</span>
         </div>
     </section>
 

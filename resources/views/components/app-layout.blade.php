@@ -7,7 +7,9 @@
     <title>{{ $title }} — Séances de sport</title>
     @vite(['resources/css/app.css'])
 </head>
-<body class="min-h-dvh text-base-content" style="background: #0f1424 url('/images/sport-bg.jpg') center center / cover no-repeat;">
+<body class="min-h-dvh bg-base-300 text-base-content">
+    <div class="gradient-yozaki" aria-hidden="true"></div>
+
     <header class="border-b border-white/10 bg-base-200/95 backdrop-blur">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4 sm:px-6">
             <div class="flex flex-wrap items-center gap-x-6 gap-y-2">

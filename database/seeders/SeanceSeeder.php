@@ -7,6 +7,7 @@ use App\Models\Seance;
 use App\Models\User;
 use App\Services\InscriptionService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 
 class SeanceSeeder extends Seeder
 {
@@ -56,6 +57,52 @@ class SeanceSeeder extends Seeder
                         }
                     }
                 }
+            }
+        }
+
+        $this->seedWaitlistShowcase($collaborators);
+    }
+
+    /**
+     * @param  Collection<int, User>  $collaborators
+     */
+    private function seedWaitlistShowcase(Collection $collaborators): void
+    {
+        $demo = $collaborators->firstWhere('email', 'collab@example.com');
+
+        if ($demo === null) {
+            return;
+        }
+
+        $others = $collaborators->where('email', '!=', 'collab@example.com')->take(4)->values();
+        $chosen = $others->push($demo);
+
+        $showcase = Seance::whereNull('cancelled_at')
+            ->whereHas('place', fn ($place) => $place->where('type', 'external')->orWhere('id', $demo->agency_id))
+            ->orderBy('started_at')
+            ->get()
+            ->unique(fn (Seance $seance) => $seance->started_at->toIso8601String())
+            ->take(3);
+
+        foreach ($showcase as $seance) {
+            $seance->update(['max_participants' => 3]);
+
+            foreach ($chosen as $collaborator) {
+                $overlapIds = $collaborator->seances()
+                    ->where('started_at', '<', $seance->ended_at)
+                    ->where('ended_at', '>', $seance->started_at)
+                    ->pluck('seances.id');
+
+                $collaborator->seances()->detach($overlapIds);
+            }
+
+            $seance->participants()->detach();
+
+            foreach ($chosen->values() as $index => $collaborator) {
+                $seance->participants()->attach($collaborator->id, [
+                    'status' => $index < 3 ? 'registered' : 'waitlist',
+                    'position' => $index + 1,
+                ]);
             }
         }
     }
