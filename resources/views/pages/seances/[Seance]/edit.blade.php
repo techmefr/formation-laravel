@@ -15,10 +15,6 @@ if ($seance !== null && ! $seance instanceof Seance) {
     $seance = Seance::findOrFail($seance);
 }
 
-if ($seance !== null && auth()->user()?->cannot('update', $seance)) {
-    abort(403);
-}
-
 $places = Place::orderBy('name')->get();
 $coaches = User::role('coach')->orderBy('name')->get();
 $isStaff = auth()->user()?->hasAnyRole(['admin', 'manager']) ?? false;
@@ -29,6 +25,11 @@ $endedAt = old('ended_at', $seance?->ended_at?->format('Y-m-d\TH:i'));
 ?>
 
 <x-app-layout title="Modifier la séance">
+    @cannot('update', $seance)
+        <section class="panel mx-auto max-w-2xl p-6">
+            <p class="text-sm text-base-content/70">Vous n'avez pas le droit de modifier cette séance.</p>
+        </section>
+    @else
     <section class="panel mx-auto max-w-2xl p-6">
         <a href="{{ route('seances.show', ['seance' => $seance?->id]) }}" class="mb-4 inline-block text-sm text-base-content/70 hover:text-base-content">← Retour</a>
         <h1 class="mb-5 text-2xl font-extrabold">Modifier la séance</h1>
@@ -107,4 +108,5 @@ $endedAt = old('ended_at', $seance?->ended_at?->format('Y-m-d\TH:i'));
             </div>
         </form>
     </section>
+    @endcannot
 </x-app-layout>

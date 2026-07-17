@@ -9,10 +9,6 @@ use function Laravel\Folio\name;
 middleware(['auth']);
 name('seances.create');
 
-if (auth()->user()?->cannot('create', Seance::class)) {
-    abort(403);
-}
-
 $places = Place::orderBy('name')->get();
 $coaches = User::role('coach')->orderBy('name')->get();
 $isStaff = auth()->user()?->hasAnyRole(['admin', 'manager']) ?? false;
@@ -29,6 +25,11 @@ if ($defaultStart === null && request('date') !== null && request('start') !== n
 ?>
 
 <x-app-layout title="Nouvelle séance">
+    @cannot('create', App\Models\Seance::class)
+        <section class="panel mx-auto max-w-2xl p-6">
+            <p class="text-sm text-base-content/70">Vous n'avez pas le droit de créer une séance.</p>
+        </section>
+    @else
     <section class="panel mx-auto max-w-2xl p-6">
         <a href="{{ route('seances.index') }}" class="mb-4 inline-block text-sm text-base-content/70 hover:text-base-content">← Retour</a>
         <h1 class="mb-5 text-2xl font-extrabold">Nouvelle séance</h1>
@@ -97,4 +98,5 @@ if ($defaultStart === null && request('date') !== null && request('start') !== n
             </div>
         </form>
     </section>
+    @endcannot
 </x-app-layout>
