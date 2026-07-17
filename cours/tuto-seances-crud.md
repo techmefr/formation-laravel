@@ -170,62 +170,73 @@ class StoreSeanceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create seances');
+        return $this->user()?->can('create', Seance::class) ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->user()->hasRole('coach')) {
+            $this->merge(['coach_id' => $this->user()->id]);
+        }
     }
 
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'place_id' => ['required', 'exists:places,id'],
             'coach_id' => ['required', 'exists:users,id'],
-            'started_at' => ['required', 'date', 'after:now'],
+            'started_at' => ['required', 'date'],
             'ended_at' => ['required', 'date', 'after:started_at'],
             'max_participants' => ['nullable', 'integer', 'min:1'],
-            'recurrence' => ['required', 'in:none,daily,weekly,monthly'],
-            'recurrence_until' => ['nullable', 'date', 'after:started_at'],
         ];
     }
 }
 ```
 
-(Une `UpdateSeanceRequest` similaire pour la modification.)
+Deux points importants :
+
+- **`authorize()` appelle la Policy**, pas la permission brute : `can('create', Seance::class)` déclenche `SeancePolicy::create` (§4). C'est là que le « le coach gère les siennes » se joue (pour `UpdateSeanceRequest`, on passe l'objet : `can('update', $this->route('seance'))`).
+- **`prepareForValidation()`** tourne **avant** les règles : un coach ne choisit pas son `coach_id`, on le force à lui-même. admin/manager, eux, le choisissent dans un `<select>`.
+
+(Une `UpdateSeanceRequest` quasi identique pour la modification.)
 
 ---
 
 ## 6. Le controller (mince) + la couche Service + les routes
 
-Comme pour l'auth : le controller orchestre, un **`SeanceService`** porte la logique d'écriture.
+Le controller orchestre, un **`SeanceService`** porte la logique d'écriture. **Il n'y a pas de méthode `index`/`show`/`create`/`edit`** dans le controller : ces **pages** sont servies par **Folio** (§1 bis). Le controller ne gère que les **actions** (POST/PUT/DELETE).
 
 ```php
 class SeanceController extends Controller
 {
     public function __construct(private SeanceService $seances) {}
 
-    public function index()
+    public function store(StoreSeanceRequest $request): RedirectResponse
     {
-        return view('seances.index', [
-            'seances' => Seance::with('coach')->latest()->paginate(15), // with() = anti N+1
-        ]);
-    }
-
-    public function store(StoreSeanceRequest $request)
-    {
-        $seance = $this->seances->create($request->validated());
+        $this->seances->create($request->validated());
 
         return redirect()->route('seances.index')
             ->with('notification', ['type' => 'success', 'message' => 'Séance créée.']);
     }
 
-    public function update(UpdateSeanceRequest $request, Seance $seance)
+    public function update(UpdateSeanceRequest $request, Seance $seance): RedirectResponse
     {
-        $this->authorize('update', $seance); // déclenche la Policy §4
         $this->seances->update($seance, $request->validated());
 
         return redirect()->route('seances.index')
             ->with('notification', ['type' => 'success', 'message' => 'Séance modifiée.']);
     }
 
-    public function destroy(Seance $seance)
+    public function cancel(Seance $seance): RedirectResponse
+    {
+        $this->authorize('cancel', $seance);
+        $this->seances->cancel($seance);
+
+        return back()->with('notification', ['type' => 'success', 'message' => 'Séance annulée.']);
+    }
+
+    public function destroy(Seance $seance): RedirectResponse
     {
         $this->authorize('delete', $seance);
         $this->seances->delete($seance);
@@ -236,25 +247,51 @@ class SeanceController extends Controller
 }
 ```
 
-Les routes, derrière `auth` + les permissions (Cours 4/6) :
+Le Service :
+
+```php
+class SeanceService
+{
+    public function create(array $data): Seance { return Seance::create($data); }
+
+    public function update(Seance $seance, array $data): void { $seance->update($data); }
+
+    public function cancel(Seance $seance): void
+    {
+        $seance->cancelled_at = now();
+        $seance->save();
+    }
+
+    public function delete(Seance $seance): void { $seance->delete(); } // soft delete
+}
+```
+
+> ⚠️ **Piège vécu :** annuler = poser `cancelled_at`. Un `$seance->update(['cancelled_at' => now()])` **ne marche pas** si `cancelled_at` n'est pas dans `$fillable` : le mass-assignment l'ignore **en silence** (pas d'erreur, la colonne reste nulle). On l'affecte donc **en direct** (`$seance->cancelled_at = now(); $seance->save();`), ce qui contourne `$fillable`. Annuler ≠ supprimer : `cancel` pose une date, `delete` fait un **soft delete** (la séance disparaît des listes mais reste en base).
+
+Les routes derrière `auth` — **seulement les actions**, car les pages GET sont des routes Folio (donc pas de `Route::resource`, qui écraserait `index`/`show`) :
 
 ```php
 Route::middleware('auth')->group(function () {
-    Route::resource('seances', SeanceController::class);
+    Route::post('/seances', [SeanceController::class, 'store'])->name('seances.store');
+    Route::put('/seances/{seance}', [SeanceController::class, 'update'])->name('seances.update');
+    Route::delete('/seances/{seance}', [SeanceController::class, 'destroy'])->name('seances.destroy');
+    Route::post('/seances/{seance}/cancel', [SeanceController::class, 'cancel'])->name('seances.cancel');
 });
 ```
 
-> 💡 Chaque réponse porte un **type + message** (convention notif, Cours 4). `Route::resource` génère les 7 routes CRUD d'un coup.
+> 💡 Chaque réponse porte un **type + message** (convention notif, Cours 4). Répartition claire : **Folio** affiche (calendrier, formulaires, détail), **le controller** exécute les écritures, **le Service** porte la logique.
 
 ---
 
-## 7. Les vues Blade
+## 7. Les vues (pages Folio)
 
-Sur la charte sombre/rouge (comme l'auth) :
-- `seances/index.blade.php` — la liste (nom, coach, date, places), boutons « Créer/Modifier/Supprimer » **affichés selon les droits** (`@can('update', $seance)`).
-- `seances/create.blade.php` & `edit.blade.php` — le formulaire (name, coach, started_at, max_participants), avec `@csrf`, `old()`, `@error`.
-- `seances/show.blade.php` — le détail.
-- Un petit **toast** qui affiche `session('notification')`.
+- **`pages/seances/index.blade.php`** — la page d'accueil : le **calendrier** (FullCalendar, §10), avec le bouton **« + Nouvelle séance »** affiché selon les droits (`@can('create', App\Models\Seance::class)`).
+- **`pages/seances/create.blade.php`** — le formulaire de création (name, lieu, coach si staff, début/fin, places), avec `@csrf`, `old()`, `@error`. En tête de page : `abort(403)` si l'utilisateur `cannot('create', Seance::class)`.
+- **`pages/seances/[Seance]/edit.blade.php`** — le même formulaire pré-rempli, avec `@method('PUT')`, protégé par `cannot('update', $seance)`.
+- **`pages/seances/[Seance].blade.php`** — le détail : infos, s'inscrire/se désinscrire, liste des participants, et les actions **Modifier / Annuler / Supprimer** affichées selon la Policy (`@can('update', $seance)`, `@can('cancel', …)`, `@can('delete', …)`).
+- Un **toast** dans le layout qui affiche `session('notification')`.
+
+> 💡 Les boutons d'écriture sont **masqués** selon les droits (`@can`), mais ce n'est que du confort d'UI : la vraie barrière reste la **Policy** appelée dans le Form Request / le controller. On ne se fie jamais au seul masquage côté vue.
 
 ---
 
@@ -418,7 +455,7 @@ public function register(Seance $seance, User $user): string
 
 Le design system XEFI s'appuie sur le **RGAA**. Quatre réflexes appliqués ici :
 
-1. **L'info jamais portée par la couleur seule** (règle clé). Le statut d'une séance (disponible / complet / inscrit / file / annulée) était codé **uniquement par la couleur** de l'événement → un daltonien ne les distingue pas. On ajoute un **symbole** devant le titre (`✓` inscrit, `○` disponible, `●` complet, `⏳` file, `⊘` annulée) + une **légende** texte.
+1. **L'info jamais portée par la couleur seule** (règle clé). Le statut d'une séance (disponible / complet / inscrit / liste d'attente / annulée) était codé **uniquement par la couleur** de l'événement → un daltonien ne les distingue pas. On ajoute donc un **libellé texte** dans le titre — `(inscrit)`, `(complet)`, `(liste d'attente)`, `(annulée)` — plus une **légende**. (On a d'abord essayé un symbole comme `✓`/`○`, mais en vue Liste FullCalendar affiche déjà sa pastille de couleur : symbole **+** pastille = double icône. Le libellé texte est plus clair et se lit par un lecteur d'écran.)
 2. **Contraste** ≥ 4.5:1 pour le texte normal (on évite les gris trop clairs sur fond sombre).
 3. **Focus visible** : un `:focus-visible { outline }` global pour la navigation clavier.
 4. **Labels** : chaque `<select>`/checkbox a un `<label>` ; les boutons ont un texte (pas d'icône nue sans nom accessible).
@@ -435,16 +472,16 @@ Plus : **responsive** (le header et les filtres passent en `flex-wrap`, la grill
 - [ ] Relation `coach()` + `$fillable` + `casts()`
 - [ ] `SeancePolicy` (create / update « les siennes » / delete admin)
 - [ ] `StoreSeanceRequest` / `UpdateSeanceRequest` (authorize + rules)
-- [ ] `SeanceService` (create / update / delete) + `SeanceController` mince
-- [ ] `Route::resource('seances', ...)` derrière `auth` + permissions
+- [ ] `SeanceService` (create / update / **cancel** / delete) + `SeanceController` (actions store/update/cancel/destroy)
+- [ ] Routes d'action derrière `auth` (store POST, update PUT, destroy DELETE, cancel POST) + formulaires **pages Folio** create/edit (**pas** `Route::resource` : Folio possède index/show/create/edit)
 - [ ] Pivot `seance_user` (status + position) + relation `participants()` avec `withPivot`
 - [ ] `InscriptionService` (register / unregister / promoteFirstWaitlisted)
 - [ ] `InscriptionController` (soi-même) + `ParticipantController` (autrui, Policy `manageParticipants`)
 - [ ] Règle « une séance à la fois » (conflit horaire) dans `InscriptionService`
 - [ ] `agency_id` sur `users` + `User::agency()` + filtrage externe / agence
 - [ ] Calendrier FullCalendar (page Folio + flux `CalendarController@events` + `calendar.js` bundlé Vite)
-- [ ] Coach = ne voit que ses cours · couleur + **symbole** de statut (RGAA)
-- [ ] Vues Blade + toast `notification` · focus visible · responsive
+- [ ] Coach = ne voit que ses cours · couleur + **libellé** de statut (RGAA : jamais la couleur seule)
+- [ ] Pages Folio (calendrier / create / edit / détail) + toast `notification` · focus visible · responsive
 - [ ] Tests des 4 scénarios de rôles · `make check` vert
 
 ⬅️ [Sommaire des cours](README.md) · Feuille de route : [XEFI 03 — Recettes](xefi-03-recettes-projet.md)
