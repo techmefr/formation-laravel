@@ -29,17 +29,34 @@
             padding: 1.5rem;
             font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
             color: var(--text);
+            background: #12142e;
+        }
+        .gradient-yozaki {
+            position: fixed;
+            inset: 0;
+            z-index: -10;
             background: linear-gradient(135deg, oklch(20.5% 0.0511 277.6) 12.5%, oklch(41.6% 0.1444 288.5) 37.5%, oklch(70.4% 0.1441 303.8) 62.5%, oklch(87.7% 0.0652 342.7) 87.5%);
-            background: linear-gradient(135deg in oklab, oklch(20.5% 0.0511 277.6) 12.5%, oklch(41.6% 0.1444 288.5) 37.5%, oklch(70.4% 0.1441 303.8) 62.5%, oklch(87.7% 0.0652 342.7) 87.5%) fixed;
+            background: linear-gradient(135deg in oklab, oklch(20.5% 0.0511 277.6) 12.5%, oklch(41.6% 0.1444 288.5) 37.5%, oklch(70.4% 0.1441 303.8) 62.5%, oklch(87.7% 0.0652 342.7) 87.5%);
             background-size: 300% 300%;
             animation: yozaki-flow 36s ease-in-out infinite;
+        }
+        .gradient-yozaki::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('/images/noise.png') repeat;
+            background-size: 256px 256px;
+            image-rendering: pixelated;
+            mix-blend-mode: overlay;
+            opacity: 0.04;
+            pointer-events: none;
         }
         @keyframes yozaki-flow {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
         }
         @media (prefers-reduced-motion: reduce) {
-            body { animation: none; }
+            .gradient-yozaki { animation: none; }
         }
         .auth-card {
             width: min(92vw, 25rem);
@@ -160,6 +177,7 @@
     </style>
 </head>
 <body>
+    <div class="gradient-yozaki" aria-hidden="true"></div>
     <main class="auth-card">
         <header class="auth-card__header">
             <p class="auth-card__title">{{ $title }}</p>
