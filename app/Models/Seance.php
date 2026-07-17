@@ -8,7 +8,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property int|null $max_participants
+ * @property Carbon $started_at
+ * @property Carbon|null $ended_at
+ * @property Carbon|null $cancelled_at
+ * @property-read User|null $coach
+ * @property-read Place|null $place
+ * @property-read int|null $registered_count
+ */
 class Seance extends Model
 {
     /** @use HasFactory<SeanceFactory> */

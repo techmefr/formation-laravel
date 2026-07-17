@@ -41,15 +41,19 @@ auth()->id();       // son id
 
 ## 2. Les rôles du projet
 
-Trois rôles, avec des droits croissants :
+Quatre rôles :
 
-| Rôle | Créer | Modifier | Supprimer |
-|---|---|---|---|
-| `admin` | toutes | toutes | toutes |
-| `coach` | les siennes | les siennes | non |
-| `collaborator` | non | non | non |
+| Rôle | Créer | Modifier | Annuler | Supprimer | Gérer participants | S'inscrire (soi) |
+|---|---|---|---|---|---|---|
+| `admin` | toutes | toutes | toutes | toutes | toutes | ✅ |
+| `manager` (admin des coachs) | non | toutes | toutes | toutes | toutes | ✅ |
+| `coach` | ✅ | les siennes | les siennes | les siennes | les siennes | ✅ |
+| `collaborator` | non | non | non | non | non | ✅ |
 
-Retiens la ligne `coach` : « les siennes » — c'est elle qui va nous forcer à sortir les Policies en section 5. Une permission seule ne sait pas dire « les siennes ».
+Deux choses à retenir :
+
+- La ligne `coach` : « les siennes » — c'est elle qui va nous forcer à sortir les Policies en section 5. Une permission seule ne sait pas dire « les siennes ».
+- La colonne **S'inscrire (soi)** est à `✅` pour **tout le monde**, et elle ne passe **pas** par les permissions ci-dessus : s'inscrire à une séance n'est **pas** la modifier. C'est une action séparée (route + controller dédiés), sinon un collaborateur aurait besoin du droit de modifier la séance juste pour s'y inscrire. À ne jamais confondre.
 
 ---
 
@@ -80,6 +84,11 @@ $user->givePermissionTo('create seances');
 $user->hasRole('admin');          // true/false
 $user->can('delete seances');     // basé sur les permissions
 ```
+
+> 🔴 **Piège `guard_name`.** Un rôle/permission Spatie est rattaché à un **guard** (`web` par défaut). Si `assignRole()` lève une erreur du type « There is no role named … for guard … », le rôle existe mais **pas pour le bon guard**. Trois choses à vérifier dans l'ordre :
+> 1. Le rôle a été créé pour le **même guard** que celui du `User` (par défaut `web` des deux côtés → OK).
+> 2. Le `User` model force bien son guard si besoin : `protected $guard_name = 'web';`.
+> 3. `config/auth.php` — si le projet définit **plusieurs guards** (`web` + `api` en Partie II), Spatie peut chercher le mauvais. C'est le premier fichier à ouvrir si ça te retombe dessus sur un autre projet.
 
 Protéger une route par middleware :
 

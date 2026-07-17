@@ -4,13 +4,18 @@ namespace App\Services;
 
 use App\Models\Seance;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class InscriptionService
 {
-    public function register(Seance $seance, User $user): void
+    public function register(Seance $seance, User $user): string
     {
         if ($seance->participants()->whereKey($user->id)->exists()) {
-            return;
+            return 'already';
+        }
+
+        if ($this->hasTimeConflict($seance, (int) $user->id)) {
+            return 'conflict';
         }
 
         $status = $seance->isFull() ? 'waitlist' : 'registered';
@@ -20,6 +25,8 @@ class InscriptionService
             'status' => $status,
             'position' => $position,
         ]);
+
+        return $status;
     }
 
     public function unregister(Seance $seance, User $user): void
@@ -38,14 +45,36 @@ class InscriptionService
 
     private function promoteFirstWaitlisted(Seance $seance): void
     {
-        /** @var User|null $next */
-        $next = $seance->participants()
+        $candidates = $seance->participants()
             ->wherePivot('status', 'waitlist')
             ->orderByPivot('position')
-            ->first();
+            ->get();
 
-        if ($next !== null) {
-            $seance->participants()->updateExistingPivot($next->id, ['status' => 'registered']);
+        foreach ($candidates as $candidate) {
+            if (! $this->hasTimeConflict($seance, (int) $candidate->getKey())) {
+                $seance->participants()->updateExistingPivot($candidate->getKey(), ['status' => 'registered']);
+
+                return;
+            }
         }
+    }
+
+    private function hasTimeConflict(Seance $seance, int $userId): bool
+    {
+        if ($seance->ended_at === null) {
+            return false;
+        }
+
+        $registeredSeanceIds = DB::table('seance_user')
+            ->where('user_id', $userId)
+            ->where('status', 'registered')
+            ->pluck('seance_id');
+
+        return Seance::query()
+            ->whereIn('id', $registeredSeanceIds)
+            ->whereNull('cancelled_at')
+            ->where('started_at', '<', $seance->ended_at)
+            ->where('ended_at', '>', $seance->started_at)
+            ->exists();
     }
 }

@@ -354,6 +354,81 @@ Route::middleware('auth')->group(function () {
 
 ---
 
+## 10. Le calendrier (FullCalendar) + le filtrage par agence
+
+La page d'accueil `/seances` est une **page Folio** qui affiche un vrai calendrier (**FullCalendar**), avec 3 vues : Semaine / Mois / Liste.
+
+**Le principe** : FullCalendar est une lib **JavaScript**. On ne lui donne pas les séances en dur — il **appelle une URL** qui renvoie du **JSON**, et il dessine les événements. Comme un front Nuxt qui `fetch()` une API.
+
+1. **La lib est bundlée par Vite** (pas de CDN) : `npm install @fullcalendar/core @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/list @fullcalendar/interaction`, on l'importe dans `resources/js/calendar.js`, et on ajoute cette entrée à `vite.config.js`.
+2. **Le flux d'événements** : une route `GET /calendar/events` → `CalendarController@events` qui renvoie un tableau JSON `[{id, title, start, end, url, color}]`.
+3. **La page** contient juste `<div id="calendar" data-events-url="{{ route('calendar.events') }}">`, et `calendar.js` lit cet attribut, fetch l'URL, et rend le calendrier. Clic sur un événement → page détail de la séance.
+
+**Le rattachement à une agence** : on ajoute `agency_id` sur `users` (migration + `User::agency()`). Un lieu (`Place`) a un `type` : `agency` ou `external`. Le filtrage dans le controller :
+
+```php
+if ($isCoach) {
+    $query->where('coach_id', $user->id);        // un coach ne voit QUE ses cours
+} else {
+    $agency = $request->query('agency', (string) ($user->agency_id ?? 'all'));
+    if ($agency !== 'all') {
+        $query->where(function ($q) use ($agency) {
+            $q->whereHas('place', fn ($p) => $p->where('type', 'external'))
+                ->orWhere('place_id', $agency);   // externe + l'agence choisie
+        });
+    }
+    if ($request->boolean('mine')) {
+        $query->whereHas('participants', fn ($q) => $q->whereKey($user->id));
+    }
+}
+```
+
+Le **select d'agence** (défaut = sa propre agence) et la case **« mes inscriptions »** ajoutent `?agency=…&mine=1` à l'URL ; côté JS, on appelle `calendar.refetchEvents()` au changement.
+
+> 💡 Découpage clair : les **pages Folio** affichent, le **controller `events`** sert les données (comme une mini-API interne), le **Service** porte la logique d'écriture. Chacun son rôle.
+
+## 11. La règle « une seule séance à la fois »
+
+Un utilisateur ne peut pas être **inscrit** à deux séances qui se **chevauchent** dans le temps. Cette règle vit dans le **Service** (jamais dans le controller ni la vue), au moment de `register()` :
+
+```php
+public function register(Seance $seance, User $user): string
+{
+    if ($seance->participants()->whereKey($user->id)->exists()) {
+        return 'already';
+    }
+
+    if ($this->hasTimeConflict($seance, (int) $user->id)) {
+        return 'conflict';
+    }
+
+    $status = $seance->isFull() ? 'waitlist' : 'registered';
+    // ... attach ...
+    return $status;
+}
+```
+
+`hasTimeConflict` cherche une séance où l'utilisateur est déjà **inscrit** (pas en file), non annulée, dont l'intervalle chevauche : `début_existante < fin_nouvelle` **ET** `fin_existante > début_nouvelle`.
+
+`register()` renvoie un **résultat** (`registered` / `waitlist` / `conflict` / `already`) et le controller choisit le message de notification avec un `match`. Bonus : la promotion de la file d'attente **saute** un candidat qui serait en conflit, pour ne pas le double-booker.
+
+> 💡 Retenir le placement : une **règle métier** (« pas deux séances à la fois ») se met dans le Service, testable et réutilisée par toutes les portes d'entrée (inscription soi-même **et** inscription par un staff).
+
+## 12. Accessibilité (RGAA) — les réflexes
+
+Le design system XEFI s'appuie sur le **RGAA**. Quatre réflexes appliqués ici :
+
+1. **L'info jamais portée par la couleur seule** (règle clé). Le statut d'une séance (disponible / complet / inscrit / file / annulée) était codé **uniquement par la couleur** de l'événement → un daltonien ne les distingue pas. On ajoute un **symbole** devant le titre (`✓` inscrit, `○` disponible, `●` complet, `⏳` file, `⊘` annulée) + une **légende** texte.
+2. **Contraste** ≥ 4.5:1 pour le texte normal (on évite les gris trop clairs sur fond sombre).
+3. **Focus visible** : un `:focus-visible { outline }` global pour la navigation clavier.
+4. **Labels** : chaque `<select>`/checkbox a un `<label>` ; les boutons ont un texte (pas d'icône nue sans nom accessible).
+
+Plus : **responsive** (le header et les filtres passent en `flex-wrap`, la grille détail passe en une colonne sur mobile) et `prefers-reduced-motion` respecté.
+
+> ⚠️ Ça couvre les points **visuellement vérifiables**. Un vrai audit RGAA complet (ordre de tabulation réel, ARIA, alternatives textuelles…) va au-delà.
+
+---
+
 ## Checklist
 
 - [ ] Model `Seance` + migration (name, coach_id, started_at, max_participants, softDeletes)
@@ -365,7 +440,11 @@ Route::middleware('auth')->group(function () {
 - [ ] Pivot `seance_user` (status + position) + relation `participants()` avec `withPivot`
 - [ ] `InscriptionService` (register / unregister / promoteFirstWaitlisted)
 - [ ] `InscriptionController` (soi-même) + `ParticipantController` (autrui, Policy `manageParticipants`)
-- [ ] Vues Blade (index / create / edit / show) + toast `notification`
+- [ ] Règle « une séance à la fois » (conflit horaire) dans `InscriptionService`
+- [ ] `agency_id` sur `users` + `User::agency()` + filtrage externe / agence
+- [ ] Calendrier FullCalendar (page Folio + flux `CalendarController@events` + `calendar.js` bundlé Vite)
+- [ ] Coach = ne voit que ses cours · couleur + **symbole** de statut (RGAA)
+- [ ] Vues Blade + toast `notification` · focus visible · responsive
 - [ ] Tests des 4 scénarios de rôles · `make check` vert
 
 ⬅️ [Sommaire des cours](README.md) · Feuille de route : [XEFI 03 — Recettes](xefi-03-recettes-projet.md)

@@ -38,6 +38,43 @@ Route::get('/seances/{seance}', [SeanceController::class, 'show']);
 
 ---
 
+## 1 bis. Folio — le routing par fichiers (ce qu'on utilise ici)
+
+Sur ce projet, en plus des routes classiques, on utilise **Laravel Folio** : un fichier Blade dans `resources/views/pages/` **devient une route automatiquement**, exactement comme le dossier `pages/` de Nuxt.
+
+| Fichier | URL générée |
+|---|---|
+| `pages/planning/index.blade.php` | `/planning` |
+| `pages/seances/index.blade.php` | `/seances` |
+| `pages/seances/[Seance].blade.php` | `/seances/{seance}` (route model binding inclus) |
+
+Pas de controller à écrire : la logique et l'affichage vivent dans le même fichier. En haut de page, un bloc PHP configure la route :
+
+```php
+<?php
+use App\Models\Seance;
+use function Laravel\Folio\middleware;
+use function Laravel\Folio\name;
+
+middleware(['auth']);        // protège la page (comme un guard)
+name('seances.index');       // nom de route -> route('seances.index')
+
+$seances = Seance::with('coach')->orderBy('started_at')->get();
+?>
+
+<x-app-layout title="Séances">
+    {{-- ... le HTML utilise $seances ... --}}
+</x-app-layout>
+```
+
+> 💡 C'est le même modèle mental que Nuxt : l'arborescence **est** le routing. Différence avec les routes classiques (§1) : pas de fichier `web.php` ni de controller pour ces pages. Les deux approches **cohabitent** ici — Folio pour les pages qui affichent, `web.php` + controllers pour les **actions** (s'inscrire, se désinscrire) qui ont besoin de POST/DELETE nommés.
+
+> ⚠️ **Piège Folio :** le bloc PHP du haut est évalué **aussi au démarrage** (quand Folio recense les routes), là où `auth()->user()` est encore `null`. Donc tout code qui suppose un utilisateur connecté doit être **null-safe** : `if ($user = auth()->user()) { ... }`, jamais `auth()->user()->machin()` en direct.
+
+> 💡 **Pas de Livewire ici.** Folio ne dépend pas de Livewire. Nos pages sont du **Blade classique rendu côté serveur** : les interactions (s'inscrire, changer de semaine) passent par de simples `<form>` et des liens, pas par du JavaScript réactif. La plupart des « UI kits Blade » (Flux, WireUI, Mary) imposeraient Livewire — on les évite, on reste sur Folio + Tailwind/daisyUI.
+
+---
+
 ## 2. Route model binding — la magie utile
 
 Si tu **types** le paramètre `Seance $seance` dans le controller, Laravel **va chercher la séance en base tout seul** à partir de `{seance}`, et renvoie un **404** automatiquement si elle n'existe pas.
