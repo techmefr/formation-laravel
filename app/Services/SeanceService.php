@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Events\SeanceCancelled;
+use App\Events\SeanceCreated;
 use App\Models\Seance;
 
 class SeanceService
@@ -11,7 +13,11 @@ class SeanceService
      */
     public function create(array $data): Seance
     {
-        return Seance::create($data);
+        $seance = Seance::create($data);
+
+        SeanceCreated::dispatch($seance);
+
+        return $seance;
     }
 
     /**
@@ -26,6 +32,8 @@ class SeanceService
     {
         $seance->cancelled_at = now();
         $seance->save();
+
+        SeanceCancelled::dispatch($seance);
     }
 
     public function delete(Seance $seance): void

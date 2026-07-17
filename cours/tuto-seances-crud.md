@@ -466,6 +466,50 @@ Plus : **responsive** (le header et les filtres passent en `flex-wrap`, la grill
 
 ---
 
+## 13. Notifications mail (event → listener → notification)
+
+À la **création** et à l'**annulation** d'une séance, on prévient par mail — **sans Observer** (convention XEFI : on passe par des **events + listeners**, Cours 7).
+
+Le `SeanceService` **dispatche un event** après l'écriture :
+
+```php
+public function create(array $data): Seance
+{
+    $seance = Seance::create($data);
+    SeanceCreated::dispatch($seance);
+
+    return $seance;
+}
+
+public function cancel(Seance $seance): void
+{
+    $seance->cancelled_at = now();
+    $seance->save();
+    SeanceCancelled::dispatch($seance);
+}
+```
+
+Un **listener** par event (auto-découvert par Laravel 11 via le type-hint de `handle()`) envoie la **notification mail** :
+
+```php
+class NotifyParticipantsOfCancellation
+{
+    public function handle(SeanceCancelled $event): void
+    {
+        Notification::send($event->seance->participants, new SeanceCancelledNotification($event->seance));
+    }
+}
+```
+
+- `SeanceCreated` → `NotifyCoachOfNewSeance` → mail au **coach**.
+- `SeanceCancelled` → `NotifyParticipantsOfCancellation` → mail à **tous les participants**.
+
+La `Notification` (canal `mail`) construit le message dans `toMail()`. En dev, tout arrive dans **Mailpit** (`MAIL_HOST=mailpit`).
+
+> 💡 Pourquoi event + listener plutôt qu'appeler la notif directement dans le Service ? **Découplage** : le Service écrit, « qui prévenir » vit ailleurs. On peut brancher d'autres réactions (log, stats…) sans toucher au Service.
+
+---
+
 ## Checklist
 
 - [ ] Model `Seance` + migration (name, coach_id, started_at, max_participants, softDeletes)
@@ -481,6 +525,7 @@ Plus : **responsive** (le header et les filtres passent en `flex-wrap`, la grill
 - [ ] `agency_id` sur `users` + `User::agency()` + filtrage externe / agence
 - [ ] Calendrier FullCalendar (page Folio + flux `CalendarController@events` + `calendar.js` bundlé Vite)
 - [ ] Coach = ne voit que ses cours · couleur + **libellé** de statut (RGAA : jamais la couleur seule)
+- [ ] Notifications mail (events `SeanceCreated`/`SeanceCancelled` + listeners + `Notification` mail → Mailpit)
 - [ ] Pages Folio (calendrier / create / edit / détail) + toast `notification` · focus visible · responsive
 - [ ] Tests des 4 scénarios de rôles · `make check` vert
 
