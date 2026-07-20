@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }} — Séances de sport</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=bricolage-grotesque:600,700|instrument-sans:400,500,600" rel="stylesheet">
     <style>
         :root {
             --red: #c8102e;
@@ -27,7 +29,7 @@
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-family: 'Instrument Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
             color: var(--text);
             background: transparent;
         }
@@ -82,9 +84,10 @@
             margin: 0;
             padding-left: .65rem;
             border-left: 4px solid var(--red);
+            font-family: 'Bricolage Grotesque', 'Instrument Sans', system-ui, sans-serif;
             font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: .02em;
+            font-weight: 700;
+            letter-spacing: -.01em;
         }
         .auth-card__subtitle {
             margin: .2rem 0 0;
