@@ -34,7 +34,7 @@ Ordre réel, dans lequel on avance :
 9. **Seeding réaliste** (xefi/faker-php) — ✅
 10. **Partie II — bascule API (la vraie façon StackTim)** : JWT en cookie (guard `api`) + `lomkit/laravel-rest-api` + `lomkit/laravel-access-control` (Controls/Perimeters). L'auth session (point 4) est la marche pour comprendre ce que JWT + lomkit automatisent.
     - [x] JWT (guard `api`, login/me/refresh/logout) — branche `feat/partie-2`, [cours 13](cours/13-jwt-implementation.md)
-    - [ ] lomkit/laravel-rest-api sur les séances (search/mutate)
+    - [x] lomkit/laravel-rest-api sur les séances (search/mutate, relations coach/place/participants) — branche `feat/partie-2`. Deux pièges rencontrés : le cache d'autorisation lomkit sérialise mal `Illuminate\Auth\Access\Response` sur `CACHE_STORE=database` (désactivé dans `config/rest.php`), et spatie/permission résout les rôles par guard — `User::guardName()` fixe `web` pour que `$user->can(...)` marche aussi via le guard `api`.
     - [ ] lomkit/laravel-access-control (Controls/Perimeters)
 
 > Point 1 à 9 : livrés dans la **PR #1** (`feat/partie-1` → `develop`). Le point 10 (Partie II) avance sur `feat/partie-2`.
