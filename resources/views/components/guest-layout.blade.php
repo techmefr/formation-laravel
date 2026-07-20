@@ -43,7 +43,7 @@
                 radial-gradient(55% 55% at 20% 85%, #c8102e 0%, rgba(200, 16, 46, 0) 58%),
                 radial-gradient(70% 70% at 50% 50%, #2c3252 0%, rgba(44, 50, 82, 0) 60%);
             background-size: 180% 180%;
-            animation: yozaki-flow 20s ease-in-out infinite;
+            animation: yozaki-flow 12s ease-in-out infinite;
         }
         .gradient-yozaki::after {
             content: '';
