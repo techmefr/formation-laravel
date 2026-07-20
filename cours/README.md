@@ -29,6 +29,7 @@ Bascule de l'app web vers une **API REST stateless**, en réutilisant les mêmes
 |---|---|---|
 | 13 | [JWT à la main (pas à pas)](13-jwt-implementation.md) | Guard `api`, login/me/refresh/logout, l'ordre JWT → endpoints |
 | 14 | [lomkit/laravel-rest-api en pratique (pas à pas)](14-lomkit-rest-api.md) | CRUD séances (search/mutate), relations, Actions métier, 4 pièges réels |
+| 15 | [lomkit/laravel-access-control (Controls/Perimeters)](15-lomkit-access-control.md) | Remplacer les Policies à la main par Controls/Perimeters, filtrage de liste via `controlled()` |
 
 ## Spécial XEFI — pour être opérationnel vite
 
@@ -40,7 +41,7 @@ Focalisé sur **ce que fait XEFI** (conventions notées en revue, packages impos
 | X2 | [Packages imposés](xefi-02-packages.md) | spatie, xefi/faker, jwt-auth, lomkit… install + usage |
 | X3 | [Recettes du projet « Séances de sport »](xefi-03-recettes-projet.md) | Chaque feature, pas à pas, aux normes XEFI |
 
-> Les cours 11, 12, 13 et 14 sont des **cours pratiques** : tu écris le code toi-même, étape par étape.
+> Les cours 11, 12, 13, 14 et 15 sont des **cours pratiques** : tu écris le code toi-même, étape par étape.
 
 ## Référence
 
