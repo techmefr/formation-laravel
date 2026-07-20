@@ -18,6 +18,7 @@ Parcours d'apprentissage pour un dev qui connaît **JS/TS** et débute en **PHP/
 | 10 | [Tester une app Laravel](10-tests.md) | Feature tests, matrice de permissions, fakes (ta doctrine côté back) |
 | 11 | [L'authentification à la main (pas à pas)](11-auth-a-la-main.md) | Register / login / logout web (session), sans Breeze/Fortify |
 | 12 | [Le CRUD des séances (pas à pas)](12-seances-crud.md) | Model + Policy + Form Request + controller/service + vues, permissions par rôle |
+| 13 | [JWT à la main (pas à pas, Partie II)](13-jwt-implementation.md) | Guard `api`, login/me/refresh/logout, l'ordre JWT → endpoints |
 
 ## Spécial XEFI — pour être opérationnel vite
 
@@ -29,7 +30,7 @@ Focalisé sur **ce que fait XEFI** (conventions notées en revue, packages impos
 | X2 | [Packages imposés](xefi-02-packages.md) | spatie, xefi/faker, jwt-auth, lomkit… install + usage |
 | X3 | [Recettes du projet « Séances de sport »](xefi-03-recettes-projet.md) | Chaque feature, pas à pas, aux normes XEFI |
 
-> Les cours 11 et 12 sont des **cours pratiques** : tu écris le code toi-même, étape par étape.
+> Les cours 11, 12 et 13 sont des **cours pratiques** : tu écris le code toi-même, étape par étape.
 
 ## Référence
 
