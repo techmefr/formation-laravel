@@ -51,6 +51,16 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
+    /**
+     * Force spatie/laravel-permission to always resolve roles/permissions on the
+     * "web" guard, even when the request is authenticated via the "api" (JWT) guard.
+     * Same user, same roles — the guard is just how they proved who they are.
+     */
+    public function guardName(): string
+    {
+        return 'web';
+    }
+
     public function seances(): BelongsToMany
     {
         return $this->belongsToMany(Seance::class)->withPivot('status', 'position')->withTimestamps();
