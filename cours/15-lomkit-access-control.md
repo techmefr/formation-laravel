@@ -262,6 +262,8 @@ Le vrai signal pour choisir : **est-ce que la portée "own vs any" varie selon l
 
 Le design A reste pertinent si la portée "own/any" doit être **configurable indépendamment par action et par rôle** de façon fine (ex. un rôle qui a "own" sur `update` mais "any" sur `view`, sans logique commune factorisable) — dans ce cas, des permissions explicites nommées sont plus lisibles qu'un Perimeter qui devient un gros `switch` sur `$method`.
 
+> ⚠️ **Ma préférence, à retenir pour la suite du projet** : par défaut, je préfère que ce soient **les Perimeters qui gèrent "own" et "any"** (design B), pas des permissions dédoublées par portée. Si une nouvelle règle d'accès apparaît ailleurs dans le projet (sur `Place` ou un autre model), le réflexe à appliquer d'abord est Perimeters/Control — le design A (permissions `xxx_own`/`xxx_any`) ne redevient l'option à considérer que si la portée diverge vraiment d'une action à l'autre sans logique commune factorisable (cas décrit juste au-dessus).
+
 ---
 
 ## 7. L'ordre d'exécution réel : `allowed()` puis `should()` **OU** `query()`, jamais les deux
