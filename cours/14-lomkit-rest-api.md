@@ -170,7 +170,44 @@ public function guardName(): string
 
 ---
 
-## 7. Les Actions : le CRUD générique ne suffit pas
+## 7. Piège n°4 : `search`/`mutate`/`destroy` court-circuitent ta couche Service
+
+> ⚠️ Celui-ci n'a pas été vu tout de suite — erreur de ma part : `create`/`update`/`delete` avaient été testés côté API uniquement pour l'**autorisation** (les bons rôles, le bon statut HTTP), pas pour vérifier que les **notifications mail** partaient bien aussi. Elles ne partaient pas.
+
+Côté web, `SeanceController` passe par `SeanceService::create()`/`delete()`, qui dispatchent `SeanceCreated`/`SeanceDeleted` en plus de toucher la base (cours 7 : Events/Listeners). Côté API, lomkit ne connaît pas `SeanceService` — `mutate` et `destroy` appellent Eloquent **directement** :
+
+```php
+// vendor/lomkit/laravel-rest-api/.../PerformsModelOperations.php
+public function performDelete(RestRequest $request, Model $model)
+{
+    $model->delete();   // pas de SeanceService, pas d'event, pas de mail
+}
+```
+
+Résultat : créer ou supprimer une séance via `/api/seances/mutate`/`/api/seances` fonctionnait très bien (autorisation, données en base), mais **silencieusement, sans notifier personne** — pas d'erreur, pas d'exception, juste un mail qui ne part jamais. Le genre de bug qui ne se voit qu'en vérifiant l'effet de bord (Mailpit), pas en testant le status code de la réponse.
+
+Fix — les hooks de cycle de vie de la Resource (`mutated`/`destroyed`, vus dans `HasResourceHooks`), qui s'exécutent après l'opération Eloquent, quel que soit le chemin (web ou API) :
+
+```php
+// app/Rest/Resources/SeanceResource.php
+public function mutated(MutateRequest $request, array $requestBody, Model $model): void
+{
+    if ($requestBody['operation'] === 'create') {
+        SeanceCreated::dispatch($model);
+    }
+}
+
+public function destroyed(DestroyRequest $request, Model $model): void
+{
+    SeanceDeleted::dispatch($model);
+}
+```
+
+> 💡 Leçon à généraliser : quand une même action métier (créer, supprimer...) est exposée par **deux chemins** (un controller web + une Resource API), vérifie que les deux déclenchent la même chose — pas seulement les mêmes autorisations, mais aussi les mêmes effets de bord (mail, event, log). Tester "ça répond 200/403 comme attendu" ne suffit pas à garantir que le reste du comportement métier est identique des deux côtés.
+
+---
+
+## 8. Les Actions : le CRUD générique ne suffit pas
 
 `search`/`mutate` couvrent create/update/delete génériques, mais pas les actions métier (annuler une séance, s'inscrire, gérer les participants d'un autre). lomkit prévoit des **Actions** : une classe par action, montée sur `POST /api/{resource}/actions/{uriKey}`.
 
@@ -231,7 +268,7 @@ Le `uriKey` d'une action se déduit du nom de classe (`CancelSeanceAction` → `
 
 ---
 
-## 8. La documentation OpenAPI, gratuite
+## 9. La documentation OpenAPI, gratuite
 
 lomkit génère une doc Swagger à partir de tes Resources — rien à écrire :
 
@@ -243,7 +280,7 @@ Consultable sur `http://localhost:19080/api-documentation` (régénérée à cha
 
 ---
 
-## 9. Pour info : `scoutFields` (Laravel Scout), pas utilisé ici
+## 10. Pour info : `scoutFields` (Laravel Scout), pas utilisé ici
 
 La Resource lomkit a aussi une méthode `scoutFields()` (vue vide dans `SeanceResource`) : elle sert à brancher un `search` sur un moteur de recherche full-text via **Laravel Scout** (Algolia, Meilisearch, ou un driver Elasticsearch communautaire), en complément — pas remplacement — des filtres SQL classiques. On ne l'utilise pas dans ce projet (pas de moteur de recherche installé), mais c'est ce que ce nom désigne si tu le recroises dans le code du package.
 
@@ -256,6 +293,7 @@ La Resource lomkit a aussi une méthode `scoutFields()` (vue vide dans `SeanceRe
 - Le cache d'autorisation lomkit est une source de bugs difficiles à diagnostiquer (objets sérialisés) — à désactiver si `CACHE_STORE` n'est pas `array`/`redis`.
 - spatie/laravel-permission range les permissions par guard ; force `guardName()` sur `User` si le même utilisateur doit garder ses rôles quel que soit le guard qui l'a authentifié.
 - Les **Actions** lomkit ne sont **jamais auto-autorisées** : `Gate::authorize()` est à écrire toi-même dans `handle()`.
+- `search`/`mutate`/`destroy` court-circuitent la couche Service (Eloquent direct) : si `create`/`delete` doivent déclencher un event/mail, brancher les hooks `mutated()`/`destroyed()` sur la Resource — sinon ça marche « en silence » sans notifier personne. Vérifier les effets de bord, pas juste le status code.
 - `scoutFields()` = intégration Laravel Scout, hors périmètre ici.
 
 ⬅️ Retour au [sommaire des cours](README.md) · Prochaine étape : **lomkit/laravel-access-control** (Controls/Perimeters), pour remplacer les Policies à la main comme en prod StackTim.
