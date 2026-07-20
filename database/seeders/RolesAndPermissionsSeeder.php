@@ -53,6 +53,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'name' => 'manager',
             'guard_name' => 'web',
         ])->syncPermissions([
+            $create,
             $update,
             $cancel,
             $delete,
