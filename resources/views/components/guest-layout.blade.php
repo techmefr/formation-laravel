@@ -35,9 +35,14 @@
             position: fixed;
             inset: 0;
             z-index: -10;
-            background: linear-gradient(135deg, oklch(20.5% 0.0511 277.6) 12.5%, oklch(41.6% 0.1444 288.5) 37.5%, oklch(70.4% 0.1441 303.8) 62.5%, oklch(87.7% 0.0652 342.7) 87.5%);
-            background: linear-gradient(135deg in oklab, oklch(20.5% 0.0511 277.6) 12.5%, oklch(41.6% 0.1444 288.5) 37.5%, oklch(70.4% 0.1441 303.8) 62.5%, oklch(87.7% 0.0652 342.7) 87.5%);
-            background-size: 300% 300%;
+            background-color: #12142e;
+            background-image:
+                radial-gradient(60% 60% at 12% 18%, #4c3894 0%, rgba(76, 56, 148, 0) 60%),
+                radial-gradient(55% 55% at 88% 20%, #b387e8 0%, rgba(179, 135, 232, 0) 55%),
+                radial-gradient(65% 65% at 82% 85%, #f6c6e2 0%, rgba(246, 198, 226, 0) 60%),
+                radial-gradient(55% 55% at 22% 82%, #4c3894 0%, rgba(76, 56, 148, 0) 58%),
+                radial-gradient(50% 50% at 55% 50%, #b387e8 0%, rgba(179, 135, 232, 0) 55%);
+            background-size: 180% 180%;
             animation: yozaki-flow 36s ease-in-out infinite;
         }
         .gradient-yozaki::after {

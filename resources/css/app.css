@@ -49,13 +49,20 @@
     }
 }
 
-/* Midnight bloom : degrade + bruit importes de midnight-bloom.css, rendus fixes + animes ici */
+/* Midnight bloom : mesh gradient (blooms radiaux dans les 4 couleurs), fixe + anime, sur tout le site */
 .gradient-yozaki {
     position: fixed;
     inset: 0;
     z-index: -10;
-    background-size: 300% 300%;
-    animation: yozaki-flow 36s ease-in-out infinite;
+    background-color: #12142e;
+    background-image:
+        radial-gradient(60% 60% at 12% 18%, #4c3894 0%, rgba(76, 56, 148, 0) 60%),
+        radial-gradient(55% 55% at 88% 20%, #b387e8 0%, rgba(179, 135, 232, 0) 55%),
+        radial-gradient(65% 65% at 82% 85%, #f6c6e2 0%, rgba(246, 198, 226, 0) 60%),
+        radial-gradient(55% 55% at 22% 82%, #4c3894 0%, rgba(76, 56, 148, 0) 58%),
+        radial-gradient(50% 50% at 55% 50%, #b387e8 0%, rgba(179, 135, 232, 0) 55%);
+    background-size: 180% 180%;
+    animation: yozaki-flow 30s ease-in-out infinite;
 }
 
 @keyframes yozaki-flow {
