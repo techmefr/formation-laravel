@@ -37,13 +37,13 @@
             z-index: -10;
             background-color: #12142e;
             background-image:
-                radial-gradient(60% 60% at 12% 18%, #4c3894 0%, rgba(76, 56, 148, 0) 60%),
-                radial-gradient(55% 55% at 88% 20%, #b387e8 0%, rgba(179, 135, 232, 0) 55%),
-                radial-gradient(65% 65% at 82% 85%, #f6c6e2 0%, rgba(246, 198, 226, 0) 60%),
-                radial-gradient(55% 55% at 22% 82%, #4c3894 0%, rgba(76, 56, 148, 0) 58%),
-                radial-gradient(50% 50% at 55% 50%, #b387e8 0%, rgba(179, 135, 232, 0) 55%);
+                radial-gradient(60% 60% at 15% 15%, #c8102e 0%, rgba(200, 16, 46, 0) 60%),
+                radial-gradient(55% 55% at 85% 18%, #e11d2a 0%, rgba(225, 29, 42, 0) 55%),
+                radial-gradient(60% 60% at 80% 85%, #ff6b6f 0%, rgba(255, 107, 111, 0) 58%),
+                radial-gradient(55% 55% at 20% 85%, #c8102e 0%, rgba(200, 16, 46, 0) 58%),
+                radial-gradient(70% 70% at 50% 50%, #2c3252 0%, rgba(44, 50, 82, 0) 60%);
             background-size: 180% 180%;
-            animation: yozaki-flow 36s ease-in-out infinite;
+            animation: yozaki-flow 20s ease-in-out infinite;
         }
         .gradient-yozaki::after {
             content: '';
