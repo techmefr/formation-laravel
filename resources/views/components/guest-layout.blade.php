@@ -39,11 +39,10 @@
             z-index: -10;
             background-color: #0b0a0a;
             background-image:
-                radial-gradient(60% 60% at 15% 15%, #c8102e 0%, rgba(200, 16, 46, 0) 60%),
-                radial-gradient(55% 55% at 85% 18%, #e11d2a 0%, rgba(225, 29, 42, 0) 55%),
-                radial-gradient(60% 60% at 80% 85%, #ff6b6f 0%, rgba(255, 107, 111, 0) 58%),
-                radial-gradient(55% 55% at 20% 85%, #c8102e 0%, rgba(200, 16, 46, 0) 58%),
-                radial-gradient(70% 70% at 50% 50%, #241a1d 0%, rgba(36, 26, 29, 0) 60%);
+                radial-gradient(42% 42% at 10% 12%, rgba(200, 16, 46, 0.8) 0%, rgba(200, 16, 46, 0) 52%),
+                radial-gradient(38% 38% at 90% 15%, rgba(225, 29, 42, 0.7) 0%, rgba(225, 29, 42, 0) 50%),
+                radial-gradient(38% 38% at 85% 90%, rgba(255, 107, 111, 0.55) 0%, rgba(255, 107, 111, 0) 52%),
+                radial-gradient(40% 40% at 12% 90%, rgba(200, 16, 46, 0.75) 0%, rgba(200, 16, 46, 0) 52%);
             background-size: 180% 180%;
             animation: yozaki-flow 12s ease-in-out infinite;
         }
