@@ -2,6 +2,8 @@
 
 namespace App\Rest\Resources;
 
+use App\Events\SeanceCreated;
+use App\Events\SeanceDeleted;
 use App\Models\Seance;
 use App\Rest\Actions\AddParticipantAction;
 use App\Rest\Actions\CancelSeanceAction;
@@ -9,6 +11,8 @@ use App\Rest\Actions\RegisterAction;
 use App\Rest\Actions\RemoveParticipantAction;
 use App\Rest\Actions\UnregisterAction;
 use Illuminate\Database\Eloquent\Model;
+use Lomkit\Rest\Http\Requests\DestroyRequest;
+use Lomkit\Rest\Http\Requests\MutateRequest;
 use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Relations\BelongsToMany;
 
@@ -119,5 +123,17 @@ class SeanceResource extends Resource
     public function instructions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
     {
         return [];
+    }
+
+    public function mutated(MutateRequest $request, array $requestBody, Model $model): void
+    {
+        if ($requestBody['operation'] === 'create') {
+            SeanceCreated::dispatch($model);
+        }
+    }
+
+    public function destroyed(DestroyRequest $request, Model $model): void
+    {
+        SeanceDeleted::dispatch($model);
     }
 }
