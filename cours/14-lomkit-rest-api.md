@@ -4,6 +4,33 @@
 
 ---
 
+## 0. Vue d'ensemble : 4 packages, 4 problèmes différents
+
+Avant de rentrer dans le détail, il faut savoir démêler ce que chaque package de la Partie II résout — ce ne sont pas des concurrents, ils répondent à des questions différentes :
+
+| Package | Répond à | Sans lui, tu écrirais... |
+|---|---|---|
+| `spatie/laravel-permission` | "Quels rôles/permissions a cet utilisateur ?" | Tes propres tables rôles/permissions + méthodes `hasRole()`/`can()` |
+| `tymon/jwt-auth` | "Qui es-tu ?" (authentification, stateless) — [Cours 13](13-jwt-implementation.md) | La génération/vérification manuelle de tokens signés, le guard `api` |
+| `lomkit/laravel-rest-api` | "Comment j'expose ça en HTTP ?" (les endpoints) — **ce cours** | Routes, controllers, Form Requests, transformation JSON, pagination, parsing de filtres, doc — par resource |
+| `lomkit/laravel-access-control` | "Qui a le droit de voir/toucher quelle ligne ?" — [Cours 15](15-lomkit-access-control.md) | Une méthode de Policy par habilité par model, + un `where()` séparé pour chaque listing |
+
+`spatie/laravel-permission` et `tymon/jwt-auth` sont indépendants des deux packages lomkit — ils répondent à "qui es-tu / quels sont tes droits nominaux". Les deux lomkit s'appuient dessus mais résolvent chacun un problème différent : **rest-api** génère les endpoints, **access-control** décide qui peut les utiliser sur quelles lignes.
+
+### Ce que lomkit/laravel-rest-api simplifie (ce cours)
+
+Sans lui, exposer les séances en API demanderait, **par resource** : 5 routes (`index`/`store`/`update`/`destroy`/`show`), un controller avec une méthode par route, des Form Requests pour valider create/update, une API Resource pour transformer le model en JSON, le parsing à la main des query params (`?filter[coach_id]=3&include=coach&sort=-started_at`), et la doc OpenAPI écrite à la main.
+
+Avec lomkit, tout ça devient une **déclaration** (`fields()`, `relations()`, `rules()`) et **2 endpoints génériques** (`search`/`mutate`) qui savent déjà parser filtres/tri/pagination/includes en JSON structuré — plus `rest:documentation` qui génère la doc Swagger toute seule. Le détail est le sujet du reste de ce cours.
+
+### Ce que lomkit/laravel-access-control simplifie (Cours 15)
+
+Sans lui, la règle "own vs any" (`hasRole(['admin','manager']) || coach_id === user.id`) se **répète** dans chaque méthode de la Policy (`update`, `delete`, `cancel`...), et filtrer un `index` par propriétaire demande un `where()` à part, à tenir manuellement synchronisé avec la Policy.
+
+Avec lomkit, la règle vit **une seule fois** dans un Control (Perimeters `Global`/`Own`), et sert à la fois à l'autorisation ponctuelle et au filtrage de liste (`Model::controlled()`) — la duplication disparaît parce que la règle est factorisée une fois, pas parce que le concept change. Détail complet au [Cours 15](15-lomkit-access-control.md).
+
+---
+
 ## 1. La carte : où vivent les fichiers lomkit
 
 | Rôle | Emplacement |
