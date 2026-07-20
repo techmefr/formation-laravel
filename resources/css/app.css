@@ -6,16 +6,16 @@
     name: 'sport';
     default: true;
     color-scheme: dark;
-    --color-base-100: #12162a;
-    --color-base-200: #1b2038;
-    --color-base-300: #0f1424;
+    --color-base-100: #151113;
+    --color-base-200: #1e191b;
+    --color-base-300: #0b0a0a;
     --color-base-content: #f4f5f8;
     --color-primary: #c8102e;
     --color-primary-content: #ffffff;
-    --color-secondary: #2c3252;
+    --color-secondary: #2b2529;
     --color-secondary-content: #f4f5f8;
     --color-accent: #e11d2a;
-    --color-neutral: #1b2038;
+    --color-neutral: #1e191b;
     --color-neutral-content: #aab2c5;
     --color-success: #22c55e;
     --color-warning: #f59e0b;
@@ -66,13 +66,13 @@ body {
     position: fixed;
     inset: 0;
     z-index: -10;
-    background-color: #12142e;
+    background-color: #0b0a0a;
     background-image:
         radial-gradient(60% 60% at 15% 15%, #c8102e 0%, rgba(200, 16, 46, 0) 60%),
         radial-gradient(55% 55% at 85% 18%, #e11d2a 0%, rgba(225, 29, 42, 0) 55%),
         radial-gradient(60% 60% at 80% 85%, #ff6b6f 0%, rgba(255, 107, 111, 0) 58%),
         radial-gradient(55% 55% at 20% 85%, #c8102e 0%, rgba(200, 16, 46, 0) 58%),
-        radial-gradient(70% 70% at 50% 50%, #2c3252 0%, rgba(44, 50, 82, 0) 60%);
+        radial-gradient(70% 70% at 50% 50%, #241a1d 0%, rgba(36, 26, 29, 0) 60%);
     background-size: 180% 180%;
     animation: yozaki-flow 12s ease-in-out infinite;
 }
@@ -88,7 +88,7 @@ body {
 }
 
 .panel {
-    background: rgba(27, 32, 56, 0.72);
+    background: rgba(21, 17, 19, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-box, 0.9rem);
     box-shadow:
@@ -104,8 +104,8 @@ body {
     --fc-today-bg-color: rgba(200, 16, 46, 0.12);
     --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.06);
     --fc-button-text-color: #f4f5f8;
-    --fc-button-bg-color: #2c3252;
-    --fc-button-border-color: #2c3252;
+    --fc-button-bg-color: #2b2529;
+    --fc-button-border-color: #2b2529;
     --fc-button-hover-bg-color: #3a4066;
     --fc-button-hover-border-color: #3a4066;
     --fc-button-active-bg-color: #c8102e;

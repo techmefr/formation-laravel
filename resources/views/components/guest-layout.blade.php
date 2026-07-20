@@ -13,8 +13,8 @@
             --red-hover: #a50d26;
             --red-accent: #e11d2a;
             --red-link: #ff6b6f;
-            --field-bg: #0e1120;
-            --border: #2c3252;
+            --field-bg: #141011;
+            --border: #332b2e;
             --ring: rgba(225, 29, 42, .40);
             --text: #f4f5f8;
             --muted: #aab2c5;
@@ -37,13 +37,13 @@
             position: fixed;
             inset: 0;
             z-index: -10;
-            background-color: #12142e;
+            background-color: #0b0a0a;
             background-image:
                 radial-gradient(60% 60% at 15% 15%, #c8102e 0%, rgba(200, 16, 46, 0) 60%),
                 radial-gradient(55% 55% at 85% 18%, #e11d2a 0%, rgba(225, 29, 42, 0) 55%),
                 radial-gradient(60% 60% at 80% 85%, #ff6b6f 0%, rgba(255, 107, 111, 0) 58%),
                 radial-gradient(55% 55% at 20% 85%, #c8102e 0%, rgba(200, 16, 46, 0) 58%),
-                radial-gradient(70% 70% at 50% 50%, #2c3252 0%, rgba(44, 50, 82, 0) 60%);
+                radial-gradient(70% 70% at 50% 50%, #241a1d 0%, rgba(36, 26, 29, 0) 60%);
             background-size: 180% 180%;
             animation: yozaki-flow 12s ease-in-out infinite;
         }
@@ -67,7 +67,7 @@
         }
         .auth-card {
             width: min(92vw, 25rem);
-            background: linear-gradient(180deg, #1b2038, #12162a);
+            background: linear-gradient(180deg, #1c1618, #120f10);
             border: 1px solid rgba(255, 255, 255, .07);
             border-top: 3px solid var(--red);
             border-top-right-radius: 1.5rem;
