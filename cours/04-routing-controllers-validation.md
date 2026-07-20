@@ -166,7 +166,25 @@ Par exemple un fichier dédié aux webhooks, monté sur son propre préfixe et s
 )
 ```
 
-> 🎯 Retiens le principe : **un serveur, un port, plusieurs fichiers de routes.** Ce qui les sépare = middlewares (session vs token) + préfixe d'URL, choisis selon le **type de client**, pas selon un port.
+### Port ≠ type de route (le piège mental)
+
+Réflexe fréquent : « l'api tourne sur 443, le web sur 80, le WebSocket sur un autre port… ». **Non.** Un **port** = une porte vers un **processus/protocole**, pas vers un type de route.
+
+- **80 vs 443** ne séparent pas web/api : c'est **HTTP vs HTTPS** (chiffrement). En prod, ton web **et** ton api passent tous les deux par **443**. `https://site.fr/seances` et `https://site.fr/api/seances` = **même port, même processus PHP** ; c'est le **chemin** qui aiguille en interne.
+- **WebSocket** : il *peut* avoir son propre port, mais parce que c'est **un autre programme** (un serveur qui garde les connexions ouvertes en continu, ex. Laravel Reverb sur `:8080`), pas parce que « c'est de l'api ». Le plus souvent il passe même par 80/443 (`ws://` / `wss://`).
+
+Dans ton projet, chaque port = **un conteneur différent**, jamais un type de route :
+
+| Port | Processus | Rôle |
+|---|---|---|
+| `19080` | conteneur `laravel.test` | **toute** l'app — web **et** (bientôt) api, même porte |
+| `19306` | MySQL | base de données |
+| `19825` | Mailpit | interface des mails de test |
+| `19073` | Vite | serveur de dev des assets JS/CSS |
+
+web et api **n'apparaissent pas** ici : ce ne sont pas des ports, ce sont deux groupes de routes du **même** processus `19080`. Après `install:api`, `/api/...` répondra **sur le même 19080**.
+
+> 🎯 En une phrase : **le port choisit le *programme* (app / base / mail / websocket) ; le chemin d'URL choisit la *route* (web `/login` vs api `/api/login`) une fois dans l'app.**
 
 ---
 
@@ -219,6 +237,94 @@ Route::middleware('auth')->group(function () {
 ```
 
 > 💡 Un **middleware** ici, c'est exactement l'idée du middleware Express : une couche qui s'exécute **avant** ton controller et peut bloquer la requête (ici, `auth` refuse l'accès si l'utilisateur n'est pas connecté). Le `->group(...)` applique la même couche à toutes les routes du bloc, comme un `router.use(auth)` qui couvre un ensemble de routes.
+
+---
+
+## 3 bis. Brancher les middlewares sur les routes
+
+Un middleware, c'est une **couche qui s'exécute avant le controller** et peut bloquer la requête (guard Nest / middleware Express). La vraie question, c'est **comment on l'accroche** à une route. Il y a trois niveaux, et dans ton projet ils sont déjà tous là.
+
+### Niveau 0 — le groupe automatique (tu ne l'écris pas)
+
+Chaque route de `web.php` reçoit **automatiquement** le groupe `web` (session, cookie, CSRF), parce que le fichier est monté via `web:` dans `bootstrap/app.php`. Idem `api.php` → groupe `api`. C'est le socle, tu n'écris rien.
+
+### Niveau 1 — un groupe de routes (ce que tu utilises)
+
+```php
+Route::middleware('guest')->group(function () {   // seulement si PAS connecté
+    Route::get('/login', ...)->name('login');
+});
+
+Route::middleware('auth')->group(function () {    // seulement si connecté
+    Route::post('/seances', ...)->name('seances.store');
+    Route::post('/logout', ...)->name('logout');
+});
+```
+
+La requête traverse le middleware **avant** d'atteindre le controller ; s'il refuse, le controller n'est jamais appelé.
+
+### Niveau 2 — une seule route (et on peut cumuler)
+
+```php
+Route::post('/seances', [SeanceController::class, 'store'])
+    ->middleware(['auth', 'verified'])       // plusieurs, dans l'ordre
+    ->name('seances.store');
+```
+
+### Middleware avec paramètre (le `:`)
+
+Certains prennent des arguments après `:` :
+
+```php
+->middleware('can:create,App\Models\Seance')   // autorisation via policy
+->middleware('throttle:60,1')                  // 60 requêtes / minute
+```
+
+> Chez toi, l'autorisation (`create/update/…`) est faite dans les **Form Request** (`authorize()`) + les **Policies**, pas via `can:` sur la route. Les deux sont valides — tu as choisi la Form Request.
+
+### D'où viennent les noms `auth`, `guest`, `can`, `throttle` ?
+
+Ce sont des **alias**. Laravel en fournit par défaut (`auth`, `guest`, `verified`, `throttle`, `can`, `signed`…). Pour brancher **ton** middleware, tu lui donnes un alias dans `bootstrap/app.php` :
+
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->alias([
+        'agency' => \App\Http\Middleware\EnsureSameAgency::class,  // → ->middleware('agency')
+    ]);
+    $middleware->appendToGroup('web', \App\Http\Middleware\Xxx::class); // à TOUTES les routes web
+})
+```
+
+### Cas Folio (tes pages)
+
+Pas de ligne `Route::` : tu déclares le middleware **en tête de la page** :
+
+```php
+<?php
+use function Laravel\Folio\middleware;
+middleware(['auth']);        // même effet que ->middleware('auth')
+```
+
+### L'ordre compte — le modèle « oignon »
+
+Les middlewares s'empilent. La requête les traverse de l'extérieur vers le controller, puis la réponse **ressort en sens inverse** :
+
+```
+requête → [web: session] → [auth] → [throttle] → CONTROLLER → réponse (ressort par les mêmes couches)
+```
+
+Si `auth` bloque, on n'atteint jamais `throttle` ni le controller.
+
+### Récap — où accrocher un middleware
+
+| Portée | Syntaxe | Dans ton projet |
+|---|---|---|
+| Tout un fichier | `web:` / `api:` dans `bootstrap/app.php` | groupe `web` auto |
+| Un groupe de routes | `Route::middleware('auth')->group(...)` | ✅ blocs `guest` / `auth` |
+| Une route | `->middleware(['auth', 'verified'])` | possible |
+| Avec paramètre | `->middleware('can:create,App\Models\Seance')` | via Form Request chez toi |
+| Une page Folio | `middleware(['auth'])` en tête de page | ✅ |
+| Global / custom | `alias(...)`, `append(...)` dans `bootstrap/app.php` | pas encore utilisé |
 
 ---
 
