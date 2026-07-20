@@ -196,6 +196,74 @@ class SeancePolicy extends ControlledPolicy
 
 ---
 
+## 6. Deux designs possibles pour "own vs any" — et pourquoi on a choisi celui-ci
+
+Avant de coder, la question naturelle est : comment distinguer "un coach ne modifie que ses séances" de "un admin modifie tout" ? Il y a deux façons légitimes de répondre, et ce n'est pas Laravel qui tranche — c'est un choix d'architecture.
+
+### Design A — deux permissions distinctes (l'intuition la plus directe)
+
+```php
+// Seeder
+Permission::create(['name' => 'update own seances']);
+Permission::create(['name' => 'update any seances']);
+
+Role::findByName('coach')->givePermissionTo('update own seances');
+Role::findByName('admin')->givePermissionTo('update any seances');
+```
+
+```php
+// SeancePolicy
+public function update(User $user, Seance $seance): bool
+{
+    if ($user->can('update any seances')) {
+        return true;
+    }
+
+    return $user->can('update own seances') && $seance->coach_id === $user->id;
+}
+```
+
+C'est un **bon** design — clair, explicite, chaque permission a un nom qui dit exactement ce qu'elle autorise. C'est probablement ce à quoi on pense en premier quand on découvre spatie/laravel-permission.
+
+### Design B — une seule permission + Perimeters (celui qu'on a implémenté)
+
+```php
+// Seeder — une seule permission, partagée par admin/manager/coach
+Permission::create(['name' => 'update seances']);
+```
+
+```php
+// SeanceControl
+GlobalPerimeter::new()
+    ->allowed(fn ($user, $method) => $user->hasRole(['admin', 'manager']) && $user->can("{$method} seances"))
+    ->should(fn ($user, $model) => true),
+
+OwnPerimeter::new()
+    ->allowed(fn ($user, $method) => $user->can("{$method} seances"))
+    ->should(fn ($user, $model) => $model->coach_id === $user->id),
+```
+
+Ici, la permission `update seances` répond juste à "cet utilisateur a-t-il le droit de toucher à des séances, en général ?" — la portée (own/any) n'est **pas** dans le nom de la permission, elle est dans **quel Perimeter matche**, déterminé par le rôle (`hasRole`) ou l'appartenance (`coach_id`).
+
+### Ce qui a changé, concrètement
+
+| | Design A (permissions) | Design B (Perimeters) — implémenté |
+|---|---|---|
+| Nombre de permissions par action | 2 (`xxx own`, `xxx any`) | 1 (`xxx`) |
+| Où vit la règle "own vs any" | Dans le nom de la permission + un `if` dans la Policy | Dans le Perimeter (`should()`/`query()`), hors Policy |
+| Réutilisation sur une nouvelle action (`cancel`, `manageParticipants`...) | Recréer une paire de permissions + un `if` à chaque fois | Aucune permission à ajouter ; nouveaux Perimeters seulement si la logique "own/any" change |
+| Filtrage d'une liste (`index`) | Pas automatique — un `where()` à écrire à part, à tenir synchronisé | Automatique via `Model::controlled()`, même règle que l'autorisation |
+
+### Pourquoi B est plus pertinent ici
+
+Pas parce que A serait "faux" — mais parce que dans ce projet, la règle "own vs any" est **la même pour toutes les actions CRUD** (`create`/`update`/`delete` suivent tous `hasRole(['admin','manager']) || coach_id === user.id`, cf. `ownsOrManages()` du cours 11). Avec le design A, tu répéterais cette paire de permissions et ce `if` pour chaque action. Avec le design B, tu l'écris **une fois** dans `SeanceControl`, et chaque nouvelle action CRUD standard (`viewAny`, `create`, `update`, `delete`...) en hérite automatiquement — c'est exactement le problème identifié en section 1 ("la même logique se répète policy par policy, méthode par méthode").
+
+Le vrai signal pour choisir : **est-ce que la portée "own vs any" varie selon l'action, ou est-ce toujours la même règle ?** Si elle varie (ex. un rôle qui peut *voir* toutes les séances mais *modifier* seulement les siennes — ce qui est justement notre cas, cf. section 3, `viewAny`/`view` toujours ouverts), le design B s'en sort très bien aussi : c'est le `$method` reçu par `allowed()` qui permet de faire varier la règle par action, sans dédoubler les permissions.
+
+Le design A reste pertinent si la portée "own/any" doit être **configurable indépendamment par action et par rôle** de façon fine (ex. un rôle qui a "own" sur `update` mais "any" sur `view`, sans logique commune factorisable) — dans ce cas, des permissions explicites nommées sont plus lisibles qu'un Perimeter qui devient un gros `switch` sur `$method`.
+
+---
+
 ## À retenir
 
 - **Perimeter** = un périmètre d'accès réutilisable (`allowed`/`should`/`query`) ; **Control** = la liste des Perimeters valables pour un model (propriété **`$model`**) ; **`ControlledPolicy`** = la Policy qui délègue au Control (propriété **`$control`**, pas `$model`).
