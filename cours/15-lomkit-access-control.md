@@ -62,24 +62,46 @@ sail artisan make:control SeanceControl
 // app/Access/Controls/SeanceControl.php
 class SeanceControl extends Control
 {
+    protected string $model = Seance::class;
+
     protected function perimeters(): array
     {
         return [
+            // Admin/manager : accès à toutes les séances.
             GlobalPerimeter::new()
-                ->allowed(fn (User $user, string $method) => $user->hasRole(['admin', 'manager']))
+                ->allowed(function (User $user, string $method) {
+                    if (! $user->hasRole(['admin', 'manager'])) {
+                        return false;
+                    }
+
+                    return $this->allowedForMethod($user, $method);
+                })
                 ->should(fn (User $user, Model $model) => true)
                 ->query(fn (Builder $query, User $user) => $query),
 
+            // Coach/collaborateur : uniquement ses propres séances.
             OwnPerimeter::new()
-                ->allowed(fn (User $user, string $method) => $user->can("{$method} seances"))
-                ->should(fn (User $user, Model $model) => $model->coach_id === $user->id)
+                ->allowed(fn (User $user, string $method) => $this->allowedForMethod($user, $method))
+                ->should(fn (User $user, Seance $model) => $model->coach_id === $user->id)
                 ->query(fn (Builder $query, User $user) => $query->where('coach_id', $user->id)),
         ];
+    }
+
+    private function allowedForMethod(User $user, string $method): bool
+    {
+        // viewAny/view restent ouverts à tout le monde, comme dans l'ancienne Policy.
+        if (in_array($method, ['viewAny', 'view'], true)) {
+            return true;
+        }
+
+        return $user->can("{$method} seances");
     }
 }
 ```
 
 > 💡 On retrouve exactement la logique de `ownsOrManages()` (`hasRole(['admin', 'manager']) || $seance->coach_id === $user->id`) — mais éclatée en deux Perimeters au lieu d'un seul booléen. C'est ce découpage qui permet de la réutiliser aussi pour filtrer une liste (`query()`), ce qu'un simple `if` dans une Policy ne sait pas faire.
+>
+> ⚠️ **Piège** : `allowed()` reçoit `$method` déjà mappé (`config('access-control.methods.*)`, avec `viewAny` → `view`) — dans les deux cas tu reçois `'view'`. Sans le `if` ci-dessus, `viewAny`/`view` seraient soumis à la même règle que `create`/`update`/`delete` : ni les policies web ni l'API n'auraient plus fonctionné pour un simple `index`.
 
 **Le modèle** : ajoute `HasControl`.
 
@@ -89,11 +111,11 @@ use Lomkit\Access\Controls\HasControl;
 
 class Seance extends Model implements HasMedia
 {
-    use HasFactory, HasControl, InteractsWithMedia, SoftDeletes;
+    use HasControl, HasFactory, InteractsWithMedia, SoftDeletes;
 }
 ```
 
-**La Policy** devient une coquille vide qui pointe vers le Control — plus de `viewAny`/`view`/`update`/`delete` à écrire à la main :
+**La Policy** délègue au Control — plus de `viewAny`/`create`/`update`/`delete` à écrire à la main. Attention au nom de la propriété : c'est **`$control`** (pointant vers la classe Control), pas `$model` :
 
 ```php
 // app/Policies/SeancePolicy.php
@@ -101,11 +123,20 @@ use Lomkit\Access\Policies\ControlledPolicy;
 
 class SeancePolicy extends ControlledPolicy
 {
-    protected string $model = Seance::class;
+    protected string $control = SeanceControl::class;
 }
 ```
 
-`viewAny`, `view`, `create`, `update`, `delete`, `restore`, `forceDelete` sont couvertes automatiquement par ce mécanisme — cf. cours 14 : c'est exactement les méthodes que lomkit/laravel-rest-api appelle déjà via `Gate::inspect(...)`, donc **le CRUD API du cours 14 continue de marcher sans y toucher**.
+`viewAny`, `create`, `update`, `delete`, `restore`, `forceDelete` sont couvertes automatiquement par ce mécanisme — cf. cours 14 : c'est exactement les méthodes que lomkit/laravel-rest-api appelle déjà via `Gate::inspect(...)`, donc **le CRUD API du cours 14 continue de marcher sans y toucher**.
+
+⚠️ **`view` fait exception** : l'ancienne Policy le laissait ouvert à tout le monde sur un modèle précis (pas de notion de "mes séances" pour consulter le détail d'une séance). Mais `should()` d'`OwnPerimeter` compare `$model->coach_id === $user->id` — sans garde-fou, un coach se verrait refuser `view` sur la séance d'un autre coach, une régression par rapport à l'ancien comportement. Fix : override `view()` directement dans la Policy, avant même que le Control soit consulté — et attention à la signature, elle doit rester compatible avec celle de `ControlledPolicy` (paramètres `Model`, pas `Seance` ni `User`, sinon PHP refuse l'héritage) :
+
+```php
+public function view(Model $user, Model $model): bool
+{
+    return true;
+}
+```
 
 ---
 
@@ -125,6 +156,8 @@ Seance::controlled()->get();
 
 ⚠️ Point relevé dans la doc : sur une requête (`query()`), Access Control appelle toujours `should()` avec la méthode `view` (logique : lire une liste = "voir" chaque ligne). Sur un `index` de controller qui fait à la fois `$this->authorize('viewAny', ...)` (Policy) **et** `Model::controlled()` (Query), le contrôle se déclenche deux fois — pas un bug, juste deux couches qui répondent à deux questions différentes ("puis-je lister ?" vs "quelles lignes ?").
 
+⚠️ **Autre piège, plus sournois** : `controlled()` passe **toujours** par les Perimeters du Control — le `view()` qu'on vient de surcharger dans la Policy (section 3) n'a strictement aucun effet ici, parce que `controlled()` ne consulte jamais la Policy. Testé sur ce projet : un collaborateur (aucun perimeter ne le concerne — ni admin/manager, ni coach) obtient **0 résultat** via `Seance::controlled()->get()`, alors que le calendrier actuel de l'app montre toutes les séances à tout le monde. C'est cohérent avec la logique Own/Global (les mêmes règles que `update`/`delete`), mais ça ne reproduit pas le comportement réel du listing existant. **On n'a donc pas branché `controlled()` sur `SeanceController`/`CalendarController`** — à réserver au jour où le listing lui-même doit être restreint par propriétaire, avec un perimeter dédié si besoin (ex. un `AnyonePerimeter` avec `query()` qui ne filtre rien, en plus de `Global`/`Own`).
+
 ---
 
 ## 5. Ce que ça remplace, ce que ça ne remplace pas
@@ -135,16 +168,26 @@ Seance::controlled()->get();
 ```php
 class SeancePolicy extends ControlledPolicy
 {
-    protected string $model = Seance::class;
+    protected string $control = SeanceControl::class;
+
+    public function view(Model $user, Model $model): bool
+    {
+        return true;
+    }
 
     public function cancel(User $user, Seance $seance): bool
     {
-        return $user->can('cancel seances') && ($user->hasRole(['admin', 'manager']) || $seance->coach_id === $user->id);
+        return $user->can('cancel seances') && $this->ownsOrManages($user, $seance);
     }
 
     public function manageParticipants(User $user, Seance $seance): bool
     {
-        return $user->can('manage participants') && ($user->hasRole(['admin', 'manager']) || $seance->coach_id === $user->id);
+        return $user->can('manage participants') && $this->ownsOrManages($user, $seance);
+    }
+
+    private function ownsOrManages(User $user, Seance $seance): bool
+    {
+        return $user->hasRole(['admin', 'manager']) || $seance->coach_id === $user->id;
     }
 }
 ```
@@ -155,8 +198,11 @@ class SeancePolicy extends ControlledPolicy
 
 ## À retenir
 
-- **Perimeter** = un périmètre d'accès réutilisable (`allowed`/`should`/`query`) ; **Control** = la liste des Perimeters valables pour un model ; **`ControlledPolicy`** = la Policy qui délègue au Control.
-- Le vrai gain sur une Policy à la main : `query()` sait **filtrer une liste** avec la même règle que `should()` autorise un modèle unique — plus besoin de garder deux logiques synchronisées.
+- **Perimeter** = un périmètre d'accès réutilisable (`allowed`/`should`/`query`) ; **Control** = la liste des Perimeters valables pour un model (propriété **`$model`**) ; **`ControlledPolicy`** = la Policy qui délègue au Control (propriété **`$control`**, pas `$model`).
+- `allowed()` reçoit un `$method` déjà mappé par `config('access-control.methods.*)` (`viewAny` → `view`) : sans le distinguer explicitement, `viewAny`/`view` tombent sous la même règle que `create`/`update`/`delete`.
+- `view()` sur une Policy `ControlledPolicy` doit parfois rester surchargé à la main (signature `Model $user, Model $model`, pas de types plus précis) si l'ancien comportement était "ouvert à tous, peu importe le propriétaire".
+- `controlled()` **ignore la Policy** — il consulte directement les Perimeters du Control. Une surcharge de `view()` sur la Policy n'a aucun effet sur `Model::controlled()->get()`.
+- Le vrai gain sur une Policy à la main : `query()` sait **filtrer une liste** avec la même règle que `should()` autorise un modèle unique — mais vérifie que ce filtrage correspond vraiment au comportement souhaité du listing avant de le brancher (`enabled_by_default: false` dans `config/access-control.php`, sûr par défaut).
 - Ça ne couvre que les 7 méthodes CRUD standards ; les actions métier custom (`cancel`, `manageParticipants`) restent à écrire à la main sur la Policy, en plus de `extends ControlledPolicy`.
 - Le CRUD API lomkit du [Cours 14](14-lomkit-rest-api.md) n'a rien à changer : il appelle les mêmes noms d'ability (`viewAny`, `update`...), juste servis par le Control plutôt que par du code écrit à la main.
 - Package en bêta au moment d'écrire ce cours — à garder en tête avant toute mise en prod.

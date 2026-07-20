@@ -2,39 +2,31 @@
 
 namespace App\Policies;
 
+use App\Access\Controls\SeanceControl;
 use App\Models\Seance;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Lomkit\Access\Policies\ControlledPolicy;
 
-class SeancePolicy
+class SeancePolicy extends ControlledPolicy
 {
-    public function viewAny(User $user): bool
+    /**
+     * @var class-string<SeanceControl>
+     */
+    protected string $control = SeanceControl::class;
+
+    /**
+     * Ouvert à tout utilisateur connecté, contrairement à viewAny/create/update/delete :
+     * pas de notion de "ses propres séances" pour consulter le détail d'une séance.
+     */
+    public function view(Model $user, Model $model): bool
     {
         return true;
-    }
-
-    public function view(User $user, Seance $seance): bool
-    {
-        return true;
-    }
-
-    public function create(User $user): bool
-    {
-        return $user->can('create seances');
-    }
-
-    public function update(User $user, Seance $seance): bool
-    {
-        return $user->can('update seances') && $this->ownsOrManages($user, $seance);
     }
 
     public function cancel(User $user, Seance $seance): bool
     {
         return $user->can('cancel seances') && $this->ownsOrManages($user, $seance);
-    }
-
-    public function delete(User $user, Seance $seance): bool
-    {
-        return $user->can('delete seances') && $this->ownsOrManages($user, $seance);
     }
 
     public function manageParticipants(User $user, Seance $seance): bool

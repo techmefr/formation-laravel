@@ -35,7 +35,7 @@ Ordre réel, dans lequel on avance :
 10. **Partie II — bascule API (la vraie façon StackTim)** : JWT en cookie (guard `api`) + `lomkit/laravel-rest-api` + `lomkit/laravel-access-control` (Controls/Perimeters). L'auth session (point 4) est la marche pour comprendre ce que JWT + lomkit automatisent.
     - [x] JWT (guard `api`, login/me/refresh/logout) — branche `feat/partie-2`, [cours 13](cours/13-jwt-implementation.md)
     - [x] lomkit/laravel-rest-api sur les séances (search/mutate, relations coach/place/participants, Actions cancel/inscription/participants, doc OpenAPI) — branche `feat/partie-2`, [cours 14](cours/14-lomkit-rest-api.md). 4 pièges réels rencontrés et documentés dans le cours (cache d'autorisation qui sérialise mal `Response`, policy manquante sur un modèle exposé via relation, `guard_name` spatie par guard, Actions jamais auto-autorisées).
-    - [ ] lomkit/laravel-access-control (Controls/Perimeters) — **package non installé** (`lomkit/laravel-access-control` absent du `composer.json`), à ajouter explicitement si on veut aller jusqu'au bout de la parité StackTim ; les Policies existantes couvrent déjà l'autorisation pour l'instant.
+    - [x] lomkit/laravel-access-control (Controls/Perimeters) sur `SeancePolicy`/`SeanceControl` — branche `feat/partie-2`, [cours 15](cours/15-lomkit-access-control.md). Package en **bêta** (assumé). `SeancePolicy` garde `view()`/`cancel()`/`manageParticipants()` en Policy classique ; `viewAny`/`create`/`update`/`delete` délégués au Control. `Model::controlled()` pas branché sur les controllers existants (filtrerait le listing différemment du comportement actuel).
 
 > Point 1 à 9 : livrés dans la **PR #1** (`feat/partie-1` → `develop`). Le point 10 (Partie II) avance sur `feat/partie-2`.
 
