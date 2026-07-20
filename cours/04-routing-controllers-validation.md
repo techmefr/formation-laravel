@@ -411,6 +411,88 @@ $request->input('name'); // un champ brut si besoin
 
 ---
 
+## 5 bis. Form Request vs validation « inline » — ça change quoi ?
+
+On aurait pu tout écrire **dans le controller**. Comparons, parce que le comportement final est le même — ce qui change, c'est le rangement et la robustesse.
+
+**Ce qu'on écrit naturellement (inline dans le controller) :**
+
+```php
+public function store(Request $request)
+{
+    if (! $request->user()->can('create', Seance::class)) {
+        abort(403);                                   // autorisation à la main
+    }
+
+    $data = $request->validate([                       // validation à la main
+        'name' => ['required', 'string', 'max:255'],
+        'started_at' => ['required', 'date'],
+        // ...
+    ]);
+
+    if ($request->user()->hasRole('coach')) {          // règle métier à la main
+        $data['coach_id'] = $request->user()->id;
+    }
+
+    $this->seances->create($data);
+}
+```
+
+**Avec une Form Request :**
+
+```php
+class StoreSeanceRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('create', Seance::class) ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->user()->hasRole('coach')) {
+            $this->merge(['coach_id' => $this->user()->id]);
+        }
+    }
+
+    public function rules(): array
+    {
+        return ['name' => ['required', 'string', 'max:255'], /* ... */];
+    }
+}
+
+// controller : une ligne
+public function store(StoreSeanceRequest $request)
+{
+    $this->seances->create($request->validated());     // déjà validé + autorisé
+}
+```
+
+La Form Request fait **deux choses, automatiquement, AVANT le controller** : `authorize()` (le droit) puis `rules()` (la validation).
+
+| | Inline (dans le controller) | Form Request |
+|---|---|---|
+| Où vit la logique | mélangée dans la méthode | classe dédiée |
+| Quand ça tourne | tu l'écris toi, en 1re ligne | **avant** le controller, tout seul |
+| Si non autorisé | tu dois penser à `abort(403)` | `authorize()` false → **403 auto** |
+| Si validation KO | `validate()` lève l'erreur | **redirect back + erreurs + `old()`** auto |
+| Réutilisation | à recopier dans `store` ET `update` | règles centralisées par action |
+| Testabilité | il faut tester tout le controller | autorisation **testée seule** (`assertForbidden`) |
+| Risque d'oubli | on peut zapper le check → trou de sécu | check **structurel**, impossible à oublier |
+
+> 💡 Résultat identique côté utilisateur, mais le controller redevient ce qu'on veut — **valide, délègue, renvoie** — et la sécurité ne dépend plus de « penser à » l'écrire.
+
+### Le vrai déclencheur sur ce projet
+
+À un moment on avait mis l'`abort(403)` **dans la page Folio**. Problème : le bloc PHP d'une page Folio s'exécute aussi **au recensement des routes** (cf. §1 bis), quand `auth()->user()` est encore `null` → **403 partout**. La correction :
+
+- l'**autorisation de l'action** va dans la **Form Request** (`authorize()`) → sécurise réellement le `POST`/`PUT` ;
+- un simple `@can` dans le Blade → uniquement pour **afficher/masquer le bouton**.
+
+Autrement dit, la Form Request n'a pas seulement rangé le code : elle a remis l'autorisation **au bon endroit** (sur l'action, pas sur l'affichage de la page).
+
+---
+
 ## 6. La couche Service (comme ton front)
 
 Le controller reste **mince** et délègue la logique à une classe **Service**, exactement comme une page front appelle un `authService.ts`.
