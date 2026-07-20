@@ -42,7 +42,7 @@ Chaque Perimeter définit trois choses :
 | `should(fn(User $user, Model $model))` | Ce modèle précis rentre-t-il dans ce périmètre pour cet utilisateur ? (ex. `$seance->coach_id === $user->id`) |
 | `query(fn(Builder $query, User $user))` | Comment filtrer une liste pour ce périmètre ? (ex. `->where('coach_id', $user->id)`) |
 
-Un Control peut avoir plusieurs Perimeters (admin = `Global`, coach = `Own`) : le premier qui répond `allowed() && should()` gagne.
+Un Control peut avoir plusieurs Perimeters (admin = `Global`, coach = `Own`) : le premier dont `allowed()` passe est retenu (détail de l'ordre d'exécution en section 7).
 
 ---
 
@@ -264,6 +264,98 @@ Le design A reste pertinent si la portée "own/any" doit être **configurable in
 
 ---
 
+## 7. L'ordre d'exécution réel : `allowed()` puis `should()` **OU** `query()`, jamais les deux
+
+Piège de lecture fréquent : on imagine un pipeline `allowed → should → query` exécuté à chaque fois. En réalité, `should()` et `query()` ne sont **jamais appelés dans le même appel** — ce sont deux traductions différentes de la même règle, choisies selon le contexte. D'après le code source du package (`Control::applies()` et `Control::applyQueryControl()`) :
+
+**Autoriser un modèle précis** (`Gate::authorize('update', $seance)`, donc `ControlledPolicy`) :
+
+```
+pour chaque Perimeter :
+    si allowed(user, method) :
+        si le modèle n'existe pas (create/viewAny) → true, fini
+        sinon → should(user, model) tranche
+```
+
+→ `allowed()` puis `should()`. `query()` n'est même pas regardé.
+
+**Filtrer une liste** (`Seance::controlled()->get()`) :
+
+```
+pour chaque Perimeter :
+    si allowed(user, 'view') :
+        applique query(builder, user) sur la requête SQL
+```
+
+→ `allowed()` puis `query()`. `should()` n'est même pas regardé.
+
+Le schéma correct :
+
+```
+allowed()  ←  toujours le premier filtre (le portail d'entrée du Perimeter)
+   ├── record unique  → should()
+   └── liste (query)  → query()
+```
+
+C'est pour ça qu'on écrit `should` et `query` **tous les deux** dans un Perimeter (même condition métier, formulée une fois en comparaison PHP sur un objet déjà chargé, une fois en `WHERE` SQL) — mais un seul des deux s'exécute par appel, jamais en séquence.
+
+---
+
+## 8. Ça existe ailleurs : Supabase (RLS) et JS (CASL)
+
+Le problème que résout Controls/Perimeters n'est pas propre à Laravel — deux équivalents à connaître si tu recroises la question côté Supabase ou JS pur.
+
+### Supabase → Row Level Security (RLS)
+
+Le plus proche conceptuellement, même si ce n'est pas du code applicatif mais des règles **au niveau Postgres** :
+
+```sql
+-- Équivalent RLS de OwnPerimeter sur la table "seances"
+create policy "coach modifie ses propres seances"
+on seances for update
+using (coach_id = auth.uid());
+
+create policy "admin modifie tout"
+on seances for update
+using (exists (
+  select 1 from user_roles
+  where user_id = auth.uid() and role in ('admin', 'manager')
+));
+```
+
+`using (...)` = le `query()` d'un Perimeter (filtre les lignes visibles/modifiables), appliqué **automatiquement** à chaque requête SQL par Postgres lui-même — comme `Model::controlled()`, sauf que c'est la base de données qui refuse la ligne, pas un `where()` ajouté côté Laravel. Plusieurs policies sur une table = plusieurs Perimeters sur un Control. Différence : RLS n'a pas de `should()` séparé — chaque policy est déjà scopée à une commande SQL (`select`/`insert`/`update`/`delete`), donc pas de distinction "modèle unique vs liste" à faire soi-même.
+
+### JS/TS → CASL (`@casl/ability`)
+
+La lib JS la plus proche en esprit — indépendante du framework (Node, NestJS, React côté front) :
+
+```js
+// Équivalent CASL de SeanceControl
+import { AbilityBuilder, createMongoAbility } from '@casl/ability'
+
+function defineAbilitiesFor(user) {
+  const { can, build } = new AbilityBuilder(createMongoAbility)
+
+  if (user.roles.includes('admin') || user.roles.includes('manager')) {
+    can('update', 'Seance')                       // Global : tout
+  } else {
+    can('update', 'Seance', { coachId: user.id })  // Own : condition = should()
+  }
+
+  return build()
+}
+
+ability.can('update', seance) // équivalent de Gate::authorize('update', $seance)
+```
+
+Le 3ᵉ argument de `can(...)` (l'objet de conditions) joue le rôle de `should()` — CASL peut aussi transformer ces conditions en filtre Mongo/SQL (`rulesToQuery`), le pendant direct de `query()`/`controlled()`.
+
+### Le point commun
+
+Perimeters, RLS et CASL résolvent le même problème : **factoriser la règle "qui a accès à quoi" une seule fois**, pour qu'elle serve à la fois à autoriser une action ponctuelle et à filtrer une liste, au lieu de dupliquer la logique entre une Policy et un `where()` séparé. Un pattern qui revient partout dès qu'il y a des permissions par propriétaire — pas une invention propre à Laravel/lomkit.
+
+---
+
 ## À retenir
 
 - **Perimeter** = un périmètre d'accès réutilisable (`allowed`/`should`/`query`) ; **Control** = la liste des Perimeters valables pour un model (propriété **`$model`**) ; **`ControlledPolicy`** = la Policy qui délègue au Control (propriété **`$control`**, pas `$model`).
@@ -274,5 +366,7 @@ Le design A reste pertinent si la portée "own/any" doit être **configurable in
 - Ça ne couvre que les 7 méthodes CRUD standards ; les actions métier custom (`cancel`, `manageParticipants`) restent à écrire à la main sur la Policy, en plus de `extends ControlledPolicy`.
 - Le CRUD API lomkit du [Cours 14](14-lomkit-rest-api.md) n'a rien à changer : il appelle les mêmes noms d'ability (`viewAny`, `update`...), juste servis par le Control plutôt que par du code écrit à la main.
 - Package en bêta au moment d'écrire ce cours — à garder en tête avant toute mise en prod.
+- `allowed()` est toujours le premier filtre ; ensuite c'est `should()` (record unique) **ou** `query()` (liste), jamais les deux dans le même appel.
+- Le pattern n'est pas propre à Laravel : Supabase (Row Level Security) et CASL (`@casl/ability`, JS/TS) résolvent le même problème — factoriser une règle d'accès pour qu'elle serve à la fois à autoriser et à filtrer une liste.
 
 ⬅️ Retour au [sommaire des cours](README.md)
