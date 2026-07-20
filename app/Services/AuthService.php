@@ -29,4 +29,24 @@ class AuthService
     {
         Auth::logout();
     }
+
+    /**
+     * @param  array{email: string, password: string}  $credentials
+     */
+    public function attemptJwt(array $credentials): ?string
+    {
+        $token = Auth::guard('api')->attempt($credentials);
+
+        return $token ?: null;
+    }
+
+    public function refreshJwt(): string
+    {
+        return Auth::guard('api')->refresh();
+    }
+
+    public function logoutJwt(): void
+    {
+        Auth::guard('api')->logout();
+    }
 }
