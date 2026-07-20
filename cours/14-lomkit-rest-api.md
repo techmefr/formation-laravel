@@ -24,7 +24,37 @@ sail artisan rest:action CancelSeanceAction
 
 ---
 
-## 2. La Resource : ce que le client a le droit de demander
+## 2. Deux niveaux à ne pas confondre : déclaration (toi) vs requête (le client)
+
+Une Resource lomkit expose toujours le même jeu de méthodes, dans le même ordre — pas par convention arbitraire, mais parce que chaque méthode vient d'un **trait précis** combiné dans la classe `Resource` (même mécanique que `HasRoles` sur `User`, cours 13) :
+
+| Méthode | Vient du trait | Rôle |
+|---|---|---|
+| `fields()` | `ConfiguresRestParameters` | champs exposés — et donc filtrables/triables par ce seul fait |
+| `scopes()` | `ConfiguresRestParameters` | scopes Eloquent exposables |
+| `limits()` | `ConfiguresRestParameters` | tailles de page autorisées |
+| `relations()` | `Relationable` | relations exposables (et donc "includable") |
+| `rules()` / `createRules()` / `updateRules()` | `Rulable` | validation appliquée sur `mutate` |
+| `scoutFields()` / `scoutInstructions()` | `Scoutable` | intégration Laravel Scout (section 8, pas utilisée ici) |
+| `actions()` | `Actionable` | tes actions métier (section 6) |
+| `instructions()` | `Instructionable` | variante plus légère d'action, pas couverte ici |
+
+**Il n'existe pas** de méthode `filters()`, `includes()` ou `excludes()` à écrire sur la Resource — c'est le piège de vocabulaire le plus fréquent. Ces mots-là désignent ce que **le client** envoie dans le corps JSON de sa requête `search`, pas ce que toi tu déclares :
+
+```jsonc
+{
+  "search": {
+    "filters": [{"field": "coach_id", "operator": "=", "value": 3}],
+    "includes": [{"relation": "coach"}]
+  }
+}
+```
+
+Le lien entre les deux niveaux est mécanique : `filters` ne peut cibler que des champs listés dans `fields()`, `includes` ne peut cibler que des relations listées dans `relations()`. Rien à activer en plus côté déclaration — la présence dans `fields()`/`relations()` suffit à rendre le champ filtrable / la relation includable.
+
+---
+
+## 3. La Resource : ce que le client a le droit de demander
 
 ```php
 // app/Rest/Resources/SeanceResource.php
@@ -66,7 +96,7 @@ Deux endpoints génériques suffisent alors pour tout le CRUD :
 
 ---
 
-## 3. Piège n°1 : le cache d'autorisation casse tout, même pour un utilisateur valide
+## 4. Piège n°1 : le cache d'autorisation casse tout, même pour un utilisateur valide
 
 lomkit vérifie automatiquement `Gate::inspect('viewAny', Seance::class)` sur `search`, et `Gate::inspect('create'|'update'|'delete', $seance)` sur `mutate`/`destroy` — c'est ta `SeancePolicy` du cours 6, sans rien à réécrire. Mais **par défaut, lomkit met ce résultat en cache** (`config/rest.php`, `authorizations.cache.enabled = true`).
 
@@ -81,7 +111,7 @@ Problème concret rencontré : avec `CACHE_STORE=database`, le cache sérialise 
 
 ---
 
-## 4. Piège n°2 : une relation incluse a besoin de SA PROPRE policy
+## 5. Piège n°2 : une relation incluse a besoin de SA PROPRE policy
 
 Inclure `coach` (relation vers `User`) ou `place` déclenche **aussi** `Gate::inspect('viewAny', User::class)` / `Gate::inspect('viewAny', Place::class)` — pas seulement sur `Seance`. Sans `UserPolicy`/`PlacePolicy`, Laravel n'a personne à qui poser la question et refuse par défaut.
 
@@ -95,7 +125,7 @@ public function view(User $user, User $model): bool { return true; }
 
 ---
 
-## 5. Piège n°3 : `$user->can(...)` peut mentir selon le guard actif
+## 6. Piège n°3 : `$user->can(...)` peut mentir selon le guard actif
 
 `SeancePolicy::create()` fait `$user->can('create seances')`. Ça marchait côté web (guard `web`), mais échouait via JWT — pas un bug de policy, un piège spatie/laravel-permission : **les rôles et permissions sont stockés par guard**, et le guard par défaut devient `api` après authentification JWT (Laravel appelle `Auth::shouldUse('api')` en interne). Spatie cherchait alors des permissions en guard `api`, qui n'existent pas (seedées en `web`).
 
@@ -113,7 +143,7 @@ public function guardName(): string
 
 ---
 
-## 6. Les Actions : le CRUD générique ne suffit pas
+## 7. Les Actions : le CRUD générique ne suffit pas
 
 `search`/`mutate` couvrent create/update/delete génériques, mais pas les actions métier (annuler une séance, s'inscrire, gérer les participants d'un autre). lomkit prévoit des **Actions** : une classe par action, montée sur `POST /api/{resource}/actions/{uriKey}`.
 
@@ -174,7 +204,7 @@ Le `uriKey` d'une action se déduit du nom de classe (`CancelSeanceAction` → `
 
 ---
 
-## 7. La documentation OpenAPI, gratuite
+## 8. La documentation OpenAPI, gratuite
 
 lomkit génère une doc Swagger à partir de tes Resources — rien à écrire :
 
@@ -186,7 +216,7 @@ Consultable sur `http://localhost:19080/api-documentation` (régénérée à cha
 
 ---
 
-## 8. Pour info : `scoutFields` (Laravel Scout), pas utilisé ici
+## 9. Pour info : `scoutFields` (Laravel Scout), pas utilisé ici
 
 La Resource lomkit a aussi une méthode `scoutFields()` (vue vide dans `SeanceResource`) : elle sert à brancher un `search` sur un moteur de recherche full-text via **Laravel Scout** (Algolia, Meilisearch, ou un driver Elasticsearch communautaire), en complément — pas remplacement — des filtres SQL classiques. On ne l'utilise pas dans ce projet (pas de moteur de recherche installé), mais c'est ce que ce nom désigne si tu le recroises dans le code du package.
 
@@ -195,6 +225,7 @@ La Resource lomkit a aussi une méthode `scoutFields()` (vue vide dans `SeanceRe
 ## À retenir
 
 - Une Resource lomkit = `fields()` + `relations()` + `rules()` ; le CRUD (`search`/`mutate`/`destroy`) authorise automatiquement via **tes policies existantes**, à condition que **chaque modèle exposé** (y compris via une relation) ait au moins `viewAny`/`view`.
+- Pas de `filters()`/`includes()`/`excludes()` à écrire : c'est ce que **le client** envoie dans sa requête `search`, pas ce que toi tu déclares. La déclaration (`fields()`/`relations()`) autorise, la requête exploite.
 - Le cache d'autorisation lomkit est une source de bugs difficiles à diagnostiquer (objets sérialisés) — à désactiver si `CACHE_STORE` n'est pas `array`/`redis`.
 - spatie/laravel-permission range les permissions par guard ; force `guardName()` sur `User` si le même utilisateur doit garder ses rôles quel que soit le guard qui l'a authentifié.
 - Les **Actions** lomkit ne sont **jamais auto-autorisées** : `Gate::authorize()` est à écrire toi-même dans `handle()`.
