@@ -20,9 +20,11 @@ Le reste, ce sont des raccourcis pratiques autour de ces trois idées.
 
 ## 1. Les routes
 
-Une route relie une **URL + une méthode HTTP** à un morceau de code. Il y a deux fichiers :
-- `routes/web.php` — pages web (sessions, cookies).
-- `routes/api.php` — API sans état, préfixé automatiquement par `/api`.
+Une route relie une **URL + une méthode HTTP** à un morceau de code. Elle vit dans un fichier de routes :
+- `routes/web.php` — pages web (sessions, cookies). C'est le seul livré par défaut en Laravel 11+.
+- `routes/api.php` — API sans état, préfixée automatiquement par `/api` (à ajouter avec `php artisan install:api`).
+
+> On détaille pourquoi ces fichiers existent, et pourquoi ce n'est **pas** une histoire de ports, en [§1 ter](#1-ter-les-fichiers-de-routes--web-api-console-rien-à-voir-avec-les-ports).
 
 ```php
 use App\Http\Controllers\SeanceController;
@@ -72,6 +74,99 @@ $seances = Seance::with('coach')->orderBy('started_at')->get();
 > ⚠️ **Piège Folio :** le bloc PHP du haut est évalué **aussi au démarrage** (quand Folio recense les routes), là où `auth()->user()` est encore `null`. Donc tout code qui suppose un utilisateur connecté doit être **null-safe** : `if ($user = auth()->user()) { ... }`, jamais `auth()->user()->machin()` en direct.
 
 > 💡 **Pas de Livewire ici.** Folio ne dépend pas de Livewire. Nos pages sont du **Blade classique rendu côté serveur** : les interactions (s'inscrire, changer de semaine) passent par de simples `<form>` et des liens, pas par du JavaScript réactif. La plupart des « UI kits Blade » (Flux, WireUI, Mary) imposeraient Livewire — on les évite, on reste sur Folio + Tailwind/daisyUI.
+
+---
+
+## 1 ter. Les fichiers de routes : web, api, console… (rien à voir avec les ports)
+
+Idée fausse fréquente : « web et api, c'est deux ports différents ». **Non.** Toute l'app tourne sur **un seul port** (ici `19080`). Le serveur reçoit *toutes* les requêtes dessus, et c'est **l'URL + la méthode HTTP** qui décident quelle route répond. Ce qui distingue les fichiers de routes, c'est **le groupe de middlewares** et **le préfixe d'URL** qu'on leur applique.
+
+C'est configuré dans `bootstrap/app.php` (Laravel 11+) :
+
+```php
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',        // groupe "web"
+        commands: __DIR__.'/../routes/console.php', // pas du HTTP : de la CLI
+        health: '/up',                              // route de monitoring auto
+    )
+```
+
+| Fichier | Groupe / nature | Préfixe URL | Type de client |
+|---|---|---|---|
+| `routes/web.php` | middleware `web` : **session, cookie, CSRF** | **aucun** (`/login`, `/seances`) | un **navigateur** avec une session |
+| `routes/api.php` | middleware `api` : **stateless**, token, `throttle` | **`/api`** (`/api/login`) | un **client API** (mobile, SPA, autre serveur) qui envoie un token |
+| `routes/console.php` | commandes Artisan + tâches planifiées | — | la **CLI** (`php artisan …`, cron) |
+| `routes/channels.php` | autorisation des canaux WebSocket | — | le **broadcasting** temps réel |
+
+> 💡 Analogie Nest : un seul serveur `node` qui écoute un port, mais deux `RouterModule` montés différemment — l'un avec un `SessionGuard` à la racine, l'autre avec un `JwtGuard` monté sur `/api`. Le port ne change pas ; le **chemin** et le **guard** changent.
+
+### La vraie réponse à ta question : le préfixe
+
+C'est **`/login` (web)** et **`/api/login` (api)** — jamais `/web/login`. Le groupe web **n'ajoute aucun préfixe**, seul le groupe api préfixe automatiquement par `/api`. Même logique, deux clients :
+
+```php
+// routes/web.php  → un navigateur qui affiche un formulaire et reçoit un cookie
+Route::post('/login', [AuthController::class, 'store']);          // URL finale : /login
+
+// routes/api.php  → un client qui envoie du JSON et reçoit un token
+Route::post('/login', [Api\AuthController::class, 'store']);      // URL finale : /api/login
+```
+
+Les deux fichiers peuvent contenir **la même ligne** `Route::post('/login', …)` sans collision : Laravel préfixe le second par `/api`. Tu peux changer ce préfixe :
+
+```php
+->withRouting(
+    api: __DIR__.'/../routes/api.php',
+    apiPrefix: 'api/v1',        // → /api/v1/login
+)
+```
+
+### web = session, api = stateless (le vrai critère)
+
+- **web** : après login, Laravel pose un **cookie de session**. Le navigateur le renvoie tout seul à chaque requête → d'où la protection **CSRF**. C'est ce qu'on utilise dans tout le projet actuel.
+- **api** : **aucun cookie, aucune session**. Le client renvoie un **token** (`Authorization: Bearer …`) à chaque appel. Pas de CSRF (pas de cookie automatique), mais du **rate-limiting** (`throttle`). C'est la **Partie II** (JWT + lomkit, [cours 8](08-api-rest-jwt-lomkit.md)).
+
+### Détail Laravel 11+ : `api.php` n'existe pas par défaut
+
+Ton projet n'a que `web.php` et `console.php` — regarde `bootstrap/app.php`, il n'y a pas de ligne `api:`. Depuis Laravel 11, on ajoute l'API quand on en a besoin :
+
+```bash
+php artisan install:api          # crée routes/api.php, installe Sanctum, ajoute la ligne api: dans withRouting()
+```
+
+### `console.php` : ce n'est pas du HTTP
+
+Ce fichier enregistre des **commandes Artisan** et le **planificateur** (cron). Aucune URL, aucun port :
+
+```php
+// routes/console.php
+use Illuminate\Support\Facades\Schedule;
+
+Artisan::command('seances:rappel', function () {
+    $this->info('Envoi des rappels…');   // lancé par : php artisan seances:rappel
+});
+
+Schedule::command('seances:rappel')->dailyAt('07:00');   // tâche planifiée
+```
+
+### Et « ou autre » : oui, tu peux créer tes propres fichiers de routes
+
+Par exemple un fichier dédié aux webhooks, monté sur son propre préfixe et son propre middleware :
+
+```php
+->withRouting(
+    web: __DIR__.'/../routes/web.php',
+    commands: __DIR__.'/../routes/console.php',
+    then: function () {
+        Route::middleware('api')
+            ->prefix('webhooks')
+            ->group(base_path('routes/webhooks.php'));   // → /webhooks/stripe, etc.
+    },
+)
+```
+
+> 🎯 Retiens le principe : **un serveur, un port, plusieurs fichiers de routes.** Ce qui les sépare = middlewares (session vs token) + préfixe d'URL, choisis selon le **type de client**, pas selon un port.
 
 ---
 
