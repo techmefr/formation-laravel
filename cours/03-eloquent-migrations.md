@@ -158,6 +158,23 @@ sail artisan tinker
 
 > 💡 C'est ton `node` interactif, mais branché sur ta **vraie base**. Idéal pour vérifier une requête ou l'existence d'une donnée.
 
+### ⚠️ Tinker n'est PAS ton `npm run`
+
+Piège classique : tinker n'est **pas** un lanceur de scripts. C'est une **console interactive** (REPL), pas `npm run <tâche>`. Le vrai équivalent de tes scripts JS, c'est trois autres choses :
+
+| Ton monde JS | Équivalent Laravel/PHP | Exemple |
+|---|---|---|
+| REPL `node` | **`artisan tinker`** | `sail artisan tinker` |
+| `package.json` → `"scripts"` | **`composer.json` → `"scripts"`** | `composer run dev` |
+| `npm run <tâche>` maison | **commandes Artisan** (une tâche = une commande) | `sail artisan migrate`, `sail artisan queue:work` |
+| Task-runner par-dessus | le **`Makefile`** du projet | `make up`, `make check`, `make fresh` |
+
+Donc :
+- **Tester un bout de code une fois, à la main** → **tinker** (jetable, exploratoire).
+- **Écrire une tâche réutilisable** (comme un script npm) → une **commande Artisan** (`sail artisan make:command`), un script `composer.json`, ou une cible `Makefile`.
+
+> 🔴 Convention du projet (CLAUDE.md) : pour **prouver** qu'un truc marche, préfère un **test avec factory** plutôt que tinker. Tinker sert à explorer, pas à valider durablement.
+
 ---
 
 ## Aide-mémoire — les colonnes de migration
