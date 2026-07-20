@@ -49,6 +49,12 @@
     }
 }
 
+/* Fond transparent pour laisser voir le mesh fixe derriere (sinon le fond opaque du theme le masque) */
+html,
+body {
+    background-color: transparent;
+}
+
 /* Midnight bloom : mesh gradient (blooms radiaux dans les 4 couleurs), fixe + anime, sur tout le site */
 .gradient-yozaki {
     position: fixed;

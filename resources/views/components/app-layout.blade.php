@@ -7,7 +7,7 @@
     <title>{{ $title }} — Séances de sport</title>
     @vite(['resources/css/app.css'])
 </head>
-<body class="min-h-dvh bg-base-300 text-base-content">
+<body class="min-h-dvh text-base-content">
     <div class="gradient-yozaki" aria-hidden="true"></div>
 
     <header class="border-b border-white/10 bg-base-200/95 backdrop-blur">

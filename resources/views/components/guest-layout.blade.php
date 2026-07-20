@@ -29,7 +29,7 @@
             padding: 1.5rem;
             font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
             color: var(--text);
-            background: #12142e;
+            background: transparent;
         }
         .gradient-yozaki {
             position: fixed;
