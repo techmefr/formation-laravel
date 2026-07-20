@@ -94,7 +94,6 @@ $colors = [
         </div>
     </section>
 
-    {{-- Desktop : grille colonnes = lieux, lignes = heures --}}
     <section class="panel hidden overflow-x-auto p-4 lg:block">
         <div class="flex min-w-max">
             <div class="w-14 shrink-0 pt-8">
@@ -144,7 +143,6 @@ $colors = [
         </div>
     </section>
 
-    {{-- Mobile : liste du jour par lieu --}}
     <div class="flex flex-col gap-4 lg:hidden">
         @forelse ($places as $place)
             @php $placeSeances = ($byPlace[$place->id] ?? collect()); @endphp
