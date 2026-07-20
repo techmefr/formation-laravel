@@ -3,6 +3,11 @@
 namespace App\Rest\Resources;
 
 use App\Models\Seance;
+use App\Rest\Actions\AddParticipantAction;
+use App\Rest\Actions\CancelSeanceAction;
+use App\Rest\Actions\RegisterAction;
+use App\Rest\Actions\RemoveParticipantAction;
+use App\Rest\Actions\UnregisterAction;
 use Illuminate\Database\Eloquent\Model;
 use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Relations\BelongsToMany;
@@ -97,7 +102,13 @@ class SeanceResource extends Resource
      */
     public function actions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
     {
-        return [];
+        return [
+            app(CancelSeanceAction::class),
+            app(RegisterAction::class),
+            app(UnregisterAction::class),
+            app(AddParticipantAction::class),
+            app(RemoveParticipantAction::class),
+        ];
     }
 
     /**
