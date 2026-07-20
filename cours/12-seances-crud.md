@@ -1,4 +1,4 @@
-# Tuto — Le CRUD des séances
+# Cours 12 — Le CRUD des séances (pas à pas)
 
 > But : comprendre **la logique** du CRUD séances (créer / lister / voir / modifier / supprimer) avec les **permissions par rôle**, avant de le construire. Toujours en **session + Blade** (comme l'auth). On réutilise : [Cours 3](03-eloquent-migrations.md) (migrations), [Cours 4](04-routing-controllers-validation.md) (routing/controllers/validation + couche Service), [Cours 5](05-relations-eloquent.md) (relations), [Cours 6](06-auth-permissions.md) (permissions/Policy).
 >

@@ -1,4 +1,4 @@
-# Tuto — L'authentification à la main (Partie I web)
+# Cours 11 — L'authentification à la main (pas à pas, Partie I web)
 
 > But : construire toi-même l'auth web (register / login / logout) **sans Breeze ni Fortify**, pour voir chaque fil. Session + cookie, guard `web`. Tu écris le code ; ce guide te dit **où**, **quoi**, et **pourquoi**.
 >
