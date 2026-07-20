@@ -280,6 +280,40 @@ Pour un `create`, `make:migration` remplit déjà le `down()` — tu ne touches 
 
 ⚠️ Ne pas confondre avec `make up` / `make down` (Docker) : ceux-là **démarrent/arrêtent les conteneurs** (aucune perte de données). Le `down` d'une migration **détruit la table** → les données dedans partent avec.
 
+**« Et les données quand je `down` puis `up` à nouveau ? »**
+C'est LE piège. **Une migration gère la *structure*, jamais les *données*.** `up()` construit la forme, `down()` la défait — mais rien ne **stocke** le contenu. Donc tout ce qui vivait dans la partie annulée est **perdu**, et un `up()` ensuite recrée une structure **vide** (les données ne reviennent pas).
+
+Exemple concret — un **feature flag** en colonne :
+
+```php
+public function up(): void {
+    Schema::table('users', fn (Blueprint $table) => $table->boolean('is_beta')->default(false));
+}
+public function down(): void {
+    Schema::table('users', fn (Blueprint $table) => $table->dropColumn('is_beta'));
+}
+```
+
+1. `migrate` → la colonne `is_beta` existe. Tu passes 40 users à `true`.
+2. `migrate:rollback` → exécute `down()` = `dropColumn('is_beta')` → **les 40 `true` (et tous les `false`) sont détruits**. Les lignes `users` restent, mais la colonne n'existe plus.
+3. `migrate` → `up()` recrée `is_beta` **avec sa valeur par défaut (`false`) pour tout le monde**. Tes 40 « beta » sont repassés à `false`. **Données perdues** : la structure est revenue, pas le contenu.
+
+Ce que `down()` détruit exactement :
+
+| `down()` fait… | Les lignes | Données perdues |
+|---|---|---|
+| `dropColumn('x')` | **restent** | la colonne `x` et **toutes ses valeurs** |
+| `dropIfExists('table')` (down d'un `create`) | **disparaissent** | **toute la table + ses lignes** |
+| renommer / changer le type d'une colonne | restent | risque de perte/troncature selon la transfo |
+
+**Conséquences pratiques :**
+- **En local** : aucun souci → `migrate:fresh --seed` régénère des données de test. C'est fait pour ça.
+- **En prod / base partagée** : on ne compte **jamais** sur `down()` pour revenir en arrière sans perte. Règle **forward-only** : si tu t'es trompé, tu écris une **nouvelle migration** qui corrige, tu ne rollback pas. Et avant tout changement risqué → **backup**.
+- Pour **préserver/transformer** des données lors d'un changement de schéma (ex. splitter une colonne), tu écris le **backfill dans le `up()`** (lire l'ancienne valeur, remplir la nouvelle). Le `down()` ne pourra de toute façon pas tout reconstituer.
+- Cas du **feature flag** : s'il est **en base**, un rollback détruit son état. C'est pour ça qu'on met souvent un flag en **config** (`config/features.php` piloté par `.env`) ou dans un service dédié — sa valeur ne dépend alors d'aucune migration réversible.
+
+> 🎯 `down()` restaure la **structure**, jamais les **données**. Rollback = destructif pour ce qui vivait dans la partie annulée. Hors local : forward-only + backups.
+
 **« Plusieurs migrations dans la même journée ? »**
 Oui, c'est normal (une migration = un petit changement). L'horodatage est précis à la **seconde** (`AAAA_MM_JJ_HHMMSS`), donc deux migrations le même jour ont des noms différents et s'appliquent dans l'ordre de création. `make:migration` pose ce préfixe tout seul.
 
