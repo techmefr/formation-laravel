@@ -30,6 +30,7 @@ Bascule de l'app web vers une **API REST stateless**, en réutilisant les mêmes
 | 13 | [JWT à la main (pas à pas)](13-jwt-implementation.md) | Guard `api`, login/me/refresh/logout, l'ordre JWT → endpoints |
 | 14 | [lomkit/laravel-rest-api en pratique (pas à pas)](14-lomkit-rest-api.md) | CRUD séances (search/mutate), relations, Actions métier, 4 pièges réels |
 | 15 | [lomkit/laravel-access-control (Controls/Perimeters)](15-lomkit-access-control.md) | Remplacer les Policies à la main par Controls/Perimeters, filtrage de liste via `controlled()` |
+| 16 | [Tester la Partie II (JWT, lomkit, Access Control)](16-tests-api.md) | Auth par token, format search/mutate/destroy/actions, tester un Perimeter, events |
 
 ## Spécial XEFI — pour être opérationnel vite
 
