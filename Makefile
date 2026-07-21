@@ -29,6 +29,12 @@ logs: ## Affiche les logs (Ctrl+C pour quitter)
 shell: ## Ouvre un shell dans le conteneur applicatif
 	$(SAIL) shell
 
+.PHONY: portless
+portless: ## Enregistre les alias portless (formation.localhost / formation-vite.localhost)
+	portless alias formation $$(grep -E '^APP_PORT=' .env | cut -d= -f2)
+	portless alias formation-vite $$(grep -E '^VITE_PORT=' .env | cut -d= -f2)
+	portless list
+
 ## —— Application ——————————————————————————————————————————
 .PHONY: install
 install: ## Installe les dépendances + clé d'app (après un clone)
