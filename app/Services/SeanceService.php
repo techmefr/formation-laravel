@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\SeanceCancelled;
 use App\Events\SeanceCreated;
+use App\Events\SeanceDeleted;
 use App\Models\Seance;
 use Illuminate\Http\UploadedFile;
 
@@ -50,5 +51,7 @@ class SeanceService
     public function delete(Seance $seance): void
     {
         $seance->delete();
+
+        SeanceDeleted::dispatch($seance);
     }
 }

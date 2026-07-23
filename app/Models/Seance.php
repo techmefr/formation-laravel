@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Lomkit\Access\Controls\HasControl;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -26,7 +27,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class Seance extends Model implements HasMedia
 {
     /** @use HasFactory<SeanceFactory> */
-    use HasFactory, InteractsWithMedia, SoftDeletes;
+    use HasControl, HasFactory, InteractsWithMedia, SoftDeletes;
 
     protected $fillable = [
         'name',

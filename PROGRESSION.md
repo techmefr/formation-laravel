@@ -27,12 +27,17 @@ Ordre réel, dans lequel on avance :
 2. **Packages imposés** installés (spatie permission/medialibrary/activitylog, tymon/jwt, lomkit) — ✅
 3. **Rôles & permissions** (spatie) : 3 rôles + permissions, seeder idempotent, 3 users de test — ✅
 4. **Auth à la main** : register / login / logout / reset, **couche Service** (comme le front), **politique mot de passe** (12 / maj / min / chiffre / spécial), pages Blade + dashboard — ✅ *(version web/session : étape d'apprentissage, voir point 10)*
-5. **CRUD séances** + permissions par rôle (Policy « les siennes ») — à faire
-6. **Upload fichiers** (spatie/laravel-medialibrary, MinIO/RustFS S3) — à faire
-7. **Inscription / désinscription** (bouton masqué si limite atteinte) — à faire
-8. **Notifications mail** (Mailpit) à la création/suppression — via Listener sur event Eloquent — à faire
-9. **Seeding réaliste** (xefi/faker-php) — à faire
+5. **CRUD séances** + permissions par rôle (Policy « les siennes ») — ✅
+6. **Upload fichiers** (spatie/laravel-medialibrary, MinIO/RustFS S3) — ✅
+7. **Inscription / désinscription** (bouton masqué si limite atteinte) — ✅
+8. **Notifications mail** (Mailpit) à la création/suppression — via Listener sur event Eloquent — ✅
+9. **Seeding réaliste** (xefi/faker-php) — ✅
 10. **Partie II — bascule API (la vraie façon StackTim)** : JWT en cookie (guard `api`) + `lomkit/laravel-rest-api` + `lomkit/laravel-access-control` (Controls/Perimeters). L'auth session (point 4) est la marche pour comprendre ce que JWT + lomkit automatisent.
+    - [x] JWT (guard `api`, login/me/refresh/logout) — branche `feat/partie-2`, [cours 13](cours/13-jwt-implementation.md)
+    - [x] lomkit/laravel-rest-api sur les séances (search/mutate, relations coach/place/participants, Actions cancel/inscription/participants, doc OpenAPI) — branche `feat/partie-2`, [cours 14](cours/14-lomkit-rest-api.md). 4 pièges réels rencontrés et documentés dans le cours (cache d'autorisation qui sérialise mal `Response`, policy manquante sur un modèle exposé via relation, `guard_name` spatie par guard, Actions jamais auto-autorisées).
+    - [x] lomkit/laravel-access-control (Controls/Perimeters) sur `SeancePolicy`/`SeanceControl` — branche `feat/partie-2`, [cours 15](cours/15-lomkit-access-control.md). Package en **bêta** (assumé). `SeancePolicy` garde `view()`/`cancel()`/`manageParticipants()` en Policy classique ; `viewAny`/`create`/`update`/`delete` délégués au Control. `Model::controlled()` pas branché sur les controllers existants (filtrerait le listing différemment du comportement actuel).
+
+> Point 1 à 9 : livrés dans la **PR #1** (`feat/partie-1` → `develop`). Le point 10 (Partie II) avance sur `feat/partie-2`.
 
 > 🔴 Rappel « en vrai » (observé sur `platform-api`) : en production l'auth est **JWT (cookie) via Azure OAuth**, et l'autorisation passe par **lomkit access-control** (Controls + Perimeters + permissions spatie), pas par des Policies écrites à la main. La Partie I web/session reste l'étape pédagogique.
 
