@@ -4,6 +4,7 @@ namespace App\Rest\Resources;
 
 use App\Models\Place;
 use Illuminate\Database\Eloquent\Model;
+use Lomkit\Rest\Http\Requests\RestRequest;
 
 class PlaceResource extends Resource
 {
@@ -19,7 +20,7 @@ class PlaceResource extends Resource
      *
      * @param  RestRequest  $request
      */
-    public function fields(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function fields(RestRequest $request): array
     {
         return [
             'id',
@@ -34,7 +35,7 @@ class PlaceResource extends Resource
      *
      * @param  RestRequest  $request
      */
-    public function relations(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function relations(RestRequest $request): array
     {
         return [];
     }
@@ -44,7 +45,7 @@ class PlaceResource extends Resource
      *
      * @param  RestRequest  $request
      */
-    public function scopes(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function scopes(RestRequest $request): array
     {
         return [];
     }
@@ -54,7 +55,7 @@ class PlaceResource extends Resource
      *
      * @param  RestRequest  $request
      */
-    public function limits(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function limits(RestRequest $request): array
     {
         return [
             10,
@@ -68,7 +69,7 @@ class PlaceResource extends Resource
      *
      * @param  RestRequest  $request
      */
-    public function actions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function actions(RestRequest $request): array
     {
         return [];
     }
@@ -78,7 +79,7 @@ class PlaceResource extends Resource
      *
      * @param  RestRequest  $request
      */
-    public function instructions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function instructions(RestRequest $request): array
     {
         return [];
     }
