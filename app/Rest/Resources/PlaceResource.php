@@ -4,22 +4,16 @@ namespace App\Rest\Resources;
 
 use App\Models\Place;
 use Illuminate\Database\Eloquent\Model;
+use Lomkit\Rest\Http\Requests\RestRequest;
 
 class PlaceResource extends Resource
 {
     /**
-     * The model the resource corresponds to.
-     *
      * @var class-string<Model>
      */
     public static $model = Place::class;
 
-    /**
-     * The exposed fields that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function fields(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function fields(RestRequest $request): array
     {
         return [
             'id',
@@ -29,32 +23,17 @@ class PlaceResource extends Resource
         ];
     }
 
-    /**
-     * The exposed relations that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function relations(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function relations(RestRequest $request): array
     {
         return [];
     }
 
-    /**
-     * The exposed scopes that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function scopes(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function scopes(RestRequest $request): array
     {
         return [];
     }
 
-    /**
-     * The exposed limits that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function limits(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function limits(RestRequest $request): array
     {
         return [
             10,
@@ -63,22 +42,12 @@ class PlaceResource extends Resource
         ];
     }
 
-    /**
-     * The actions that should be linked
-     *
-     * @param  RestRequest  $request
-     */
-    public function actions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function actions(RestRequest $request): array
     {
         return [];
     }
 
-    /**
-     * The instructions that should be linked
-     *
-     * @param  RestRequest  $request
-     */
-    public function instructions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function instructions(RestRequest $request): array
     {
         return [];
     }

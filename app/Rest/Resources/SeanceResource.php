@@ -13,24 +13,18 @@ use App\Rest\Actions\UnregisterAction;
 use Illuminate\Database\Eloquent\Model;
 use Lomkit\Rest\Http\Requests\DestroyRequest;
 use Lomkit\Rest\Http\Requests\MutateRequest;
+use Lomkit\Rest\Http\Requests\RestRequest;
 use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Relations\BelongsToMany;
 
 class SeanceResource extends Resource
 {
     /**
-     * The model the resource corresponds to.
-     *
      * @var class-string<Model>
      */
     public static $model = Seance::class;
 
-    /**
-     * The exposed fields that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function fields(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function fields(RestRequest $request): array
     {
         return [
             'id',
@@ -44,12 +38,7 @@ class SeanceResource extends Resource
         ];
     }
 
-    /**
-     * The exposed relations that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function relations(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function relations(RestRequest $request): array
     {
         return [
             BelongsTo::make('coach', UserResource::class),
@@ -58,22 +47,12 @@ class SeanceResource extends Resource
         ];
     }
 
-    /**
-     * The exposed scopes that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function scopes(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function scopes(RestRequest $request): array
     {
         return [];
     }
 
-    /**
-     * The exposed limits that could be provided
-     *
-     * @param  RestRequest  $request
-     */
-    public function limits(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function limits(RestRequest $request): array
     {
         return [
             10,
@@ -82,12 +61,7 @@ class SeanceResource extends Resource
         ];
     }
 
-    /**
-     * The validation rules shared by create and update requests
-     *
-     * @param  RestRequest  $request
-     */
-    public function rules(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function rules(RestRequest $request): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
@@ -99,12 +73,7 @@ class SeanceResource extends Resource
         ];
     }
 
-    /**
-     * The actions that should be linked
-     *
-     * @param  RestRequest  $request
-     */
-    public function actions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function actions(RestRequest $request): array
     {
         return [
             app(CancelSeanceAction::class),
@@ -115,18 +84,15 @@ class SeanceResource extends Resource
         ];
     }
 
-    /**
-     * The instructions that should be linked
-     *
-     * @param  RestRequest  $request
-     */
-    public function instructions(\Lomkit\Rest\Http\Requests\RestRequest $request): array
+    public function instructions(RestRequest $request): array
     {
         return [];
     }
 
     public function mutated(MutateRequest $request, array $requestBody, Model $model): void
     {
+        assert($model instanceof Seance);
+
         if ($requestBody['operation'] === 'create') {
             SeanceCreated::dispatch($model);
         }
@@ -134,6 +100,8 @@ class SeanceResource extends Resource
 
     public function destroyed(DestroyRequest $request, Model $model): void
     {
+        assert($model instanceof Seance);
+
         SeanceDeleted::dispatch($model);
     }
 }
