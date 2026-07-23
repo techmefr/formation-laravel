@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\JWTGuard;
 
 class AuthService
 {
@@ -35,18 +36,26 @@ class AuthService
      */
     public function attemptJwt(array $credentials): ?string
     {
-        $token = Auth::guard('api')->attempt($credentials);
+        $token = $this->jwtGuard()->attempt($credentials);
 
         return $token ?: null;
     }
 
     public function refreshJwt(): string
     {
-        return Auth::guard('api')->refresh();
+        return $this->jwtGuard()->refresh();
     }
 
     public function logoutJwt(): void
     {
         Auth::guard('api')->logout();
+    }
+
+    private function jwtGuard(): JWTGuard
+    {
+        $guard = Auth::guard('api');
+        assert($guard instanceof JWTGuard);
+
+        return $guard;
     }
 }
