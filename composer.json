@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "laravel/folio": "^1.1",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
         "lomkit/laravel-rest-api": "^2.22",
@@ -26,7 +27,9 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^12.5.12",
-        "xefi/faker-php": "^1.5"
+        "xefi/faker-php": "^1.5",
+        "xefi/faker-php-laravel": "^1.2",
+        "xefi/faker-php-locales-fr-fr": "^1.1"
     },
     "autoload": {
         "psr-4": {

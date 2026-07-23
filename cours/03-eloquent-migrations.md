@@ -75,6 +75,8 @@ sail artisan migrate:fresh --seed                   # TOUT recréer + relancer l
 
 > 💡 `timestamps()` : Eloquent remplit `created_at` / `updated_at` **tout seul** à chaque save. Tu n'y touches jamais à la main.
 
+> 🔴 **`migrate:fresh` DROP toutes les tables** puis rejoue tout depuis zéro. En local c'est parfait pour repartir propre. **Jamais sur une base partagée / staging / prod** : tu effaces les données de tout le monde. Un `make fresh` copié bêtement d'un projet local vers un env partagé = wipe. En dehors du local, on n'utilise que `migrate` (qui n'applique que les migrations **en attente** et ne touche pas aux données existantes). C'est aussi pour ça que `migrate` seul **ne relance pas les seeders** : seul `--seed` (via `migrate:fresh --seed` ou `db:seed`) les rejoue.
+
 ---
 
 ## 3. Le model, configuré
@@ -155,6 +157,23 @@ sail artisan tinker
 ```
 
 > 💡 C'est ton `node` interactif, mais branché sur ta **vraie base**. Idéal pour vérifier une requête ou l'existence d'une donnée.
+
+### ⚠️ Tinker n'est PAS ton `npm run`
+
+Piège classique : tinker n'est **pas** un lanceur de scripts. C'est une **console interactive** (REPL), pas `npm run <tâche>`. Le vrai équivalent de tes scripts JS, c'est trois autres choses :
+
+| Ton monde JS | Équivalent Laravel/PHP | Exemple |
+|---|---|---|
+| REPL `node` | **`artisan tinker`** | `sail artisan tinker` |
+| `package.json` → `"scripts"` | **`composer.json` → `"scripts"`** | `composer run dev` |
+| `npm run <tâche>` maison | **commandes Artisan** (une tâche = une commande) | `sail artisan migrate`, `sail artisan queue:work` |
+| Task-runner par-dessus | le **`Makefile`** du projet | `make up`, `make check`, `make fresh` |
+
+Donc :
+- **Tester un bout de code une fois, à la main** → **tinker** (jetable, exploratoire).
+- **Écrire une tâche réutilisable** (comme un script npm) → une **commande Artisan** (`sail artisan make:command`), un script `composer.json`, ou une cible `Makefile`.
+
+> 🔴 Convention du projet (CLAUDE.md) : pour **prouver** qu'un truc marche, préfère un **test avec factory** plutôt que tinker. Tinker sert à explorer, pas à valider durablement.
 
 ---
 
@@ -250,10 +269,80 @@ C'est la **nouvelle syntaxe** (les *attributs* PHP 8) pour déclarer ce que fais
 
 ⚠️ Le squelette **Laravel 13** de la formation utilise les attributs, mais le vrai projet StackTim (`platform-api`) utilise la forme classique `$fillable` / `$hidden`. Suis toujours la **convention du fichier** sur lequel tu travailles.
 
+**« C'est quoi `up()` et `down()` dans une migration ? »**
+Une migration est **réversible** :
+- **`up()`** = ce qu'on fait quand on **applique** la migration (créer la table + colonnes). Lancé par `sail artisan migrate`.
+- **`down()`** = l'**inverse**, pour **annuler** (`Schema::dropIfExists('seances')`). Lancé par `sail artisan migrate:rollback`.
+
+Pour un `create`, `make:migration` remplit déjà le `down()` — tu ne touches qu'au `up()`.
+
+> 💡 Analogie : le `up`/`down` des migrations Knex/TypeORM. Pense **`up` = installer / `down` = désinstaller**.
+
+⚠️ Ne pas confondre avec `make up` / `make down` (Docker) : ceux-là **démarrent/arrêtent les conteneurs** (aucune perte de données). Le `down` d'une migration **détruit la table** → les données dedans partent avec.
+
+**« Et les données quand je `down` puis `up` à nouveau ? »**
+C'est LE piège. **Une migration gère la *structure*, jamais les *données*.** `up()` construit la forme, `down()` la défait — mais rien ne **stocke** le contenu. Donc tout ce qui vivait dans la partie annulée est **perdu**, et un `up()` ensuite recrée une structure **vide** (les données ne reviennent pas).
+
+Exemple concret — un **feature flag** en colonne :
+
+```php
+public function up(): void {
+    Schema::table('users', fn (Blueprint $table) => $table->boolean('is_beta')->default(false));
+}
+public function down(): void {
+    Schema::table('users', fn (Blueprint $table) => $table->dropColumn('is_beta'));
+}
+```
+
+1. `migrate` → la colonne `is_beta` existe. Tu passes 40 users à `true`.
+2. `migrate:rollback` → exécute `down()` = `dropColumn('is_beta')` → **les 40 `true` (et tous les `false`) sont détruits**. Les lignes `users` restent, mais la colonne n'existe plus.
+3. `migrate` → `up()` recrée `is_beta` **avec sa valeur par défaut (`false`) pour tout le monde**. Tes 40 « beta » sont repassés à `false`. **Données perdues** : la structure est revenue, pas le contenu.
+
+Ce que `down()` détruit exactement :
+
+| `down()` fait… | Les lignes | Données perdues |
+|---|---|---|
+| `dropColumn('x')` | **restent** | la colonne `x` et **toutes ses valeurs** |
+| `dropIfExists('table')` (down d'un `create`) | **disparaissent** | **toute la table + ses lignes** |
+| renommer / changer le type d'une colonne | restent | risque de perte/troncature selon la transfo |
+
+**Conséquences pratiques :**
+- **En local** : aucun souci → `migrate:fresh --seed` régénère des données de test. C'est fait pour ça.
+- **En prod / base partagée** : on ne compte **jamais** sur `down()` pour revenir en arrière sans perte. Règle **forward-only** : si tu t'es trompé, tu écris une **nouvelle migration** qui corrige, tu ne rollback pas. Et avant tout changement risqué → **backup**.
+- Pour **préserver/transformer** des données lors d'un changement de schéma (ex. splitter une colonne), tu écris le **backfill dans le `up()`** (lire l'ancienne valeur, remplir la nouvelle). Le `down()` ne pourra de toute façon pas tout reconstituer.
+- Cas du **feature flag** : s'il est **en base**, un rollback détruit son état. C'est pour ça qu'on met souvent un flag en **config** (`config/features.php` piloté par `.env`) ou dans un service dédié — sa valeur ne dépend alors d'aucune migration réversible.
+
+> 🎯 `down()` restaure la **structure**, jamais les **données**. Rollback = destructif pour ce qui vivait dans la partie annulée. Hors local : forward-only + backups.
+
+**« Plusieurs migrations dans la même journée ? »**
+Oui, c'est normal (une migration = un petit changement). L'horodatage est précis à la **seconde** (`AAAA_MM_JJ_HHMMSS`), donc deux migrations le même jour ont des noms différents et s'appliquent dans l'ordre de création. `make:migration` pose ce préfixe tout seul.
+
+**« À quoi sert l'ordre des migrations ? »**
+Certaines tables **dépendent** d'autres. Ta table `seances` a une clé étrangère `coach_id` → `users` : la table `users` doit donc **exister avant**. Laravel exécute les migrations dans l'ordre de leur horodatage (le plus ancien d'abord), donc si tu les crées dans l'ordre logique, ça tombe juste.
+
+> Règle simple : **crée d'abord la table « parente », ensuite celle qui la référence.** (Ex. `seance_user` viendra après `seances` **et** `users`.)
+
 ## ⚠️ Les pièges qui piquent au début
 
-1. **Oublier une colonne dans `$fillable`** → `MassAssignmentException` au `create()`. Ce n'est pas un bug : c'est le garde-fou qui fait son travail.
-2. **Attendre que le model liste ses colonnes** comme un `schema.prisma` : non, il ne les connaît qu'à l'exécution, via la table. La source de vérité, ce sont les migrations.
-3. **Modifier une migration déjà appliquée** en espérant que ça se propage : non. Une fois `migrate` passé, tu crées une **nouvelle** migration (ou tu refais `migrate:fresh` en dev).
+1. **Recréer une table que Laravel crée déjà pour toi.** Depuis Laravel 11, le premier fichier `0001_01_01_000000_create_users_table.php` crée **trois** tables d'un coup : `users`, `password_reset_tokens` **et** `sessions`. Idem pour `cache` et `jobs` dans les fichiers suivants. (Le préfixe `0001_01_01` est une date volontairement ancienne pour que ces tables de base passent **toujours en premier**.)
+
+   **Vécu sur ce projet, deux fois :**
+   - `php artisan session:table` lancé parce que `SESSION_DRIVER=database` → ça génère un `create_sessions_table` **daté d'aujourd'hui**… alors que `sessions` est **déjà** créée dans `create_users_table`. Deux fichiers créent la même table.
+   - `make:migration create_places_table` alors que le model `Place` avait déjà généré sa migration → même doublon.
+
+   ⚠️ **Le piège dans le piège :** la commande de génération **ne dit rien** — elle crée le fichier sans vérifier que la table existe. L'erreur « **table `sessions` already exists** » n'arrive qu'**au moment du `migrate`**, pas à la création. D'où la surprise : tu crois que c'est bon, et ça plante deux commandes plus tard.
+
+   **Réflexe : avant tout `session:table` / `make:migration create_X_table`, ouvre les migrations existantes et vérifie que `X` n'y est pas déjà.** Si le doublon est déjà généré mais pas encore migré : supprime simplement le fichier en trop.
+2. **Oublier une colonne dans `$fillable`** → `MassAssignmentException` au `create()`. Ce n'est pas un bug : c'est le garde-fou qui fait son travail.
+3. **Attendre que le model liste ses colonnes** comme un `schema.prisma` : non, il ne les connaît qu'à l'exécution, via la table. La source de vérité, ce sont les migrations.
+4. **Modifier une migration déjà appliquée** en espérant que ça se propage : non. Une fois `migrate` passé, tu crées une **nouvelle** migration (ou tu refais `migrate:fresh` en dev).
+
+## 🧰 Pense-bête avant tout `migrate` sur un nouveau projet
+
+- [ ] La table que je veux créer n'existe **pas déjà** dans les migrations par défaut (`users` + `sessions` + `password_reset_tokens`, `cache`, `jobs`) ni ailleurs → sinon doublon.
+- [ ] Table **parente créée avant** la table qui la référence (ordre des horodatages).
+- [ ] Je suis bien en **local** si je tape `migrate:fresh` — jamais sur une base partagée.
+- [ ] Sur un env partagé : uniquement `migrate` (jamais `:fresh`), et `db:seed` seulement si c'est voulu.
+- [ ] Après un changement de structure, je crée une **nouvelle** migration plutôt que d'éditer une déjà appliquée.
 
 ➡️ Suite : [Cours 4 — Routing, Controllers & validation](04-routing-controllers-validation.md)

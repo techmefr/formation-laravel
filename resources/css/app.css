@@ -1,4 +1,28 @@
 @import 'tailwindcss';
+@import './midnight-bloom.css';
+@plugin 'daisyui';
+
+@plugin 'daisyui/theme' {
+    name: 'sport';
+    default: true;
+    color-scheme: dark;
+    --color-base-100: #151113;
+    --color-base-200: #1e191b;
+    --color-base-300: #0b0a0a;
+    --color-base-content: #f4f5f8;
+    --color-primary: #c8102e;
+    --color-primary-content: #ffffff;
+    --color-secondary: #2b2529;
+    --color-secondary-content: #f4f5f8;
+    --color-accent: #e11d2a;
+    --color-neutral: #1e191b;
+    --color-neutral-content: #aab2c5;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ff6b6f;
+    --radius-box: 0.9rem;
+    --radius-field: 0.6rem;
+}
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -6,4 +30,152 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid #ff8a90;
+    outline-offset: 2px;
+    border-radius: 0.35rem;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+    font-family: 'Bricolage Grotesque', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.015em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+html,
+body {
+    background-color: transparent;
+}
+
+.gradient-yozaki {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    background-color: #0b0a0a;
+    background-image:
+        radial-gradient(42% 42% at 10% 12%, rgba(200, 16, 46, 0.8) 0%, rgba(200, 16, 46, 0) 52%),
+        radial-gradient(38% 38% at 90% 15%, rgba(225, 29, 42, 0.7) 0%, rgba(225, 29, 42, 0) 50%),
+        radial-gradient(38% 38% at 85% 90%, rgba(255, 107, 111, 0.55) 0%, rgba(255, 107, 111, 0) 52%),
+        radial-gradient(40% 40% at 12% 90%, rgba(200, 16, 46, 0.75) 0%, rgba(200, 16, 46, 0) 52%);
+    background-size: 180% 180%;
+    animation: yozaki-flow 12s ease-in-out infinite;
+}
+
+@keyframes yozaki-flow {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.panel {
+    background: rgba(21, 17, 19, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-box, 0.9rem);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 10px 30px -14px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+}
+
+#calendar {
+    --fc-border-color: rgba(255, 255, 255, 0.1);
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: rgba(255, 255, 255, 0.03);
+    --fc-today-bg-color: rgba(200, 16, 46, 0.12);
+    --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.06);
+    --fc-button-text-color: #f4f5f8;
+    --fc-button-bg-color: #2b2529;
+    --fc-button-border-color: #2b2529;
+    --fc-button-hover-bg-color: #3a4066;
+    --fc-button-hover-border-color: #3a4066;
+    --fc-button-active-bg-color: #c8102e;
+    --fc-button-active-border-color: #c8102e;
+    color: #eef0f6;
+}
+
+#calendar a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#calendar .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 1.25rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+#calendar .fc-toolbar-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    text-transform: capitalize;
+}
+
+#calendar .fc-button {
+    font-weight: 600;
+    text-transform: capitalize;
+    border-radius: 0.55rem;
+    box-shadow: none;
+    padding: 0.35rem 0.75rem;
+}
+
+#calendar .fc-col-header-cell-cushion,
+#calendar .fc-daygrid-day-number,
+#calendar .fc-timegrid-slot-label-cushion,
+#calendar .fc-list-day-text,
+#calendar .fc-list-day-side-text {
+    color: #eef0f6;
+    font-weight: 600;
+    padding: 0.4rem 0.5rem;
+}
+
+#calendar .fc-col-header-cell {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#calendar .fc-timegrid-axis-cushion,
+#calendar .fc-timegrid-slot-label-cushion {
+    color: #aab2c5;
+    font-weight: 500;
+}
+
+#calendar .fc-event {
+    border: none;
+    border-radius: 0.45rem;
+    padding: 1px 5px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+}
+
+#calendar .fc-event:hover {
+    filter: brightness(1.1);
+}
+
+#calendar .fc-day-today .fc-col-header-cell-cushion {
+    color: #ff8a90;
+}
+
+#calendar .fc-list-empty {
+    background: transparent;
+    color: #c4cbdc;
 }

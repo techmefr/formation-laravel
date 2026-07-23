@@ -86,7 +86,7 @@ Role::firstOrCreate(['name' => 'collaborator']);
 4. Politique mot de passe : `Password::defaults()` dans `AppServiceProvider` → `min(12)->mixedCase()->numbers()->symbols()`, réutilisée dans chaque validation.
 5. Controllers minces → une **couche Service** (`AuthService`) porte la logique (comme un service côté front).
 
-> 👉 Version **à la main**, pas à pas : [Tuto — L'authentification à la main](tuto-auth-a-la-main.md).
+> 👉 Version **à la main**, pas à pas : [Cours 11 — L'authentification à la main](11-auth-a-la-main.md).
 
 > 🔴 **En vrai chez StackTim** (`platform-api`) : l'auth de prod est **JWT en cookie via Azure OAuth**, et l'autorisation passe par **`lomkit/laravel-access-control`** (Controls + Perimeters, permissions `{method}_{scope}_{resource}`, Policies qui délèguent) — voir [Cours 6](06-auth-permissions.md) et [Cours 8](08-api-rest-jwt-lomkit.md). La version web/session est l'**étape d'apprentissage** ; la Partie II bascule vers cette cible.
 

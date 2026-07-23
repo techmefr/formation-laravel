@@ -30,6 +30,6 @@ class RegisteredUserController extends Controller
 
         $this->auth->login($user);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('seances.index');
     }
 }

@@ -15,6 +15,9 @@ Parcours d'apprentissage pour un dev qui connaît **JS/TS** et débute en **PHP/
 | 7 | [Events, Listeners & Notifications](07-events-listeners-notifications.md) | Async + mails (convention XEFI clé) |
 | 8 | [API REST, JWT & lomkit](08-api-rest-jwt-lomkit.md) | Partie II du projet |
 | 9 | [Les packages du projet, comment ça marche](09-packages-expliques.md) | Le modèle mental de chaque package du projet |
+| 10 | [Tester une app Laravel](10-tests.md) | Feature tests, matrice de permissions, fakes (ta doctrine côté back) |
+| 11 | [L'authentification à la main (pas à pas)](11-auth-a-la-main.md) | Register / login / logout web (session), sans Breeze/Fortify |
+| 12 | [Le CRUD des séances (pas à pas)](12-seances-crud.md) | Model + Policy + Form Request + controller/service + vues, permissions par rôle |
 
 ## Spécial XEFI — pour être opérationnel vite
 
@@ -26,14 +29,7 @@ Focalisé sur **ce que fait XEFI** (conventions notées en revue, packages impos
 | X2 | [Packages imposés](xefi-02-packages.md) | spatie, xefi/faker, jwt-auth, lomkit… install + usage |
 | X3 | [Recettes du projet « Séances de sport »](xefi-03-recettes-projet.md) | Chaque feature, pas à pas, aux normes XEFI |
 
-## Tutos (pas à pas — tu codes)
-
-Guides de build où tu écris le code toi-même, étape par étape.
-
-| Tuto | Ce que tu construis |
-|---|---|
-| [L'authentification à la main](tuto-auth-a-la-main.md) | Register / login / logout web (session), sans Breeze/Fortify |
-| [Le CRUD des séances](tuto-seances-crud.md) | Model + Policy + Form Request + controller/service + vues, permissions par rôle |
+> Les cours 11 et 12 sont des **cours pratiques** : tu écris le code toi-même, étape par étape.
 
 ## Référence
 

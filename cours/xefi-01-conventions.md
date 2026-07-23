@@ -14,7 +14,30 @@ Toutes les règles ci-dessous découlent de ce principe. Un comportement caché 
 
 **Règle.** Interdits : les **Observers**, la méthode `boot()` dans les models, un dossier `app/Events/` avec des classes Event custom. Toute réaction à un `created`/`updated`/`deleted`… passe par un **Listener** branché sur l'**événement Eloquent natif**, déclaré dans l'`EventServiceProvider`.
 
-**Pourquoi.** Un Observer est résolu implicitement : on ne voit nulle part qu'il tourne. Un Listener déclaré dans l'`EventServiceProvider` rend le branchement visible et testable.
+### C'est quoi un Observer ?
+
+Une classe qui **regroupe des méthodes portant le nom des moments du cycle de vie** d'un model (`created`, `updated`, `deleted`, `restored`…). Tu l'enregistres **une fois** (`#[ObservedBy(SeanceObserver::class)]` sur le model ou `Seance::observe(...)`), et ensuite Laravel appelle ces méthodes **tout seul** à chaque fois que le model change.
+
+> 💡 Côté JS : c'est comme des **hooks globaux magiques** posés sur une entité — un peu les hooks `beforeSave`/`afterCreate` d'un ORM (Sequelize/TypeORM). Pratique, mais **implicite** : à l'endroit où tu fais `Seance::create(...)`, rien ne te dit qu'une réaction va partir.
+
+### C'est quoi un Listener ?
+
+Une classe avec **une seule méthode `handle(Event $event)`** qui réagit à **un événement précis**. Le lien « tel événement → tel listener » est **déclaré** (dans l'`EventServiceProvider`, ou par auto-discovery via le type-hint de `handle()`). Un événement peut être un **événement Eloquent natif** (`eloquent.created: …`) ou un Event métier.
+
+> 💡 Côté JS : c'est l'**abonnement explicite** à un event bus — `emitter.on('seance.created', handler)`. Tu **vois** qui écoute quoi.
+
+### Pourquoi l'un et pas l'autre
+
+Le fil rouge de tout ce playbook : **rendre les effets de bord explicites et testables.**
+
+| | Observer ❌ | Listener ✅ |
+|---|---|---|
+| Déclenchement | implicite, automatique | sur un événement **déclaré** |
+| Visibilité | caché (rien ne le montre au point d'appel) | visible (provider / type-hint) |
+| Test unitaire | difficile (il faut passer par le model) | direct : on teste `handle()` seul, et on vérifie l'émission avec `Event::fake()` |
+| Organisation | **toutes** les réactions du cycle entassées dans une classe | **un listener = une réaction**, isolé |
+
+**Pourquoi.** Un Observer est résolu implicitement : on ne voit nulle part qu'il tourne, et on ne peut pas facilement le tester isolément. Un Listener déclaré rend le **branchement visible** et **testable** (on l'a fait dans [Cours 10](10-tests.md) avec `Notification::fake()` : on prouve que la création émet bien la notif, sans envoyer de vrai mail).
 
 ```php
 // ❌ INTERDIT — Observer
