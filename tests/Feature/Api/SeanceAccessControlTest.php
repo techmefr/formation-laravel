@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
+use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;

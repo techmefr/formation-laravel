@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
+use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;

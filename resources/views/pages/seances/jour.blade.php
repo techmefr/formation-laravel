@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Place;
-use App\Models\Seance;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use function Laravel\Folio\middleware;
@@ -87,7 +87,7 @@ $colors = [
                 <a href="{{ route('seances.jour', ['date' => $day->copy()->subDay()->toDateString()]) }}" class="btn btn-outline btn-sm">←</a>
                 <a href="{{ route('seances.jour') }}" class="btn btn-ghost btn-sm">Aujourd'hui</a>
                 <a href="{{ route('seances.jour', ['date' => $day->copy()->addDay()->toDateString()]) }}" class="btn btn-outline btn-sm">→</a>
-                @can('create', App\Models\Seance::class)
+                @can('create', Functional\Seances\Models\Seance::class)
                     <a href="{{ route('seances.create') }}" class="btn btn-primary btn-sm">+ Nouvelle séance</a>
                 @endcan
             </div>

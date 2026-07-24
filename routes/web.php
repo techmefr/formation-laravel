@@ -1,13 +1,13 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\InscriptionController;
-use App\Http\Controllers\ParticipantController;
-use App\Http\Controllers\SeanceController;
+use Functional\Authentication\Http\Controllers\Auth\AuthenticatedSessionController;
+use Functional\Authentication\Http\Controllers\Auth\NewPasswordController;
+use Functional\Authentication\Http\Controllers\Auth\PasswordResetLinkController;
+use Functional\Authentication\Http\Controllers\Auth\RegisteredUserController;
+use Functional\Calendar\Http\Controllers\CalendarController;
+use Functional\Seances\Http\Controllers\InscriptionController;
+use Functional\Seances\Http\Controllers\ParticipantController;
+use Functional\Seances\Http\Controllers\SeanceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {

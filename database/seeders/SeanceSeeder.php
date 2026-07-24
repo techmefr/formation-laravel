@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
-use App\Services\InscriptionService;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
+use Functional\Seances\Services\InscriptionService;
+use Functional\Users\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Api;
 
-use App\Events\SeanceCreated;
-use App\Events\SeanceDeleted;
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Functional\Places\Models\Place;
+use Functional\Seances\Events\SeanceCreated;
+use Functional\Seances\Events\SeanceDeleted;
+use Functional\Seances\Models\Seance;
+use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
