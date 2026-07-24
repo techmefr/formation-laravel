@@ -9,6 +9,7 @@ use Functional\Seances\Models\Seance;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class SeanceActionsTest extends TestCase
@@ -51,7 +52,7 @@ class SeanceActionsTest extends TestCase
             ]);
     }
 
-    private function participantMutateRequest(User $user, Seance $seance, string $operation, User $participant, array $pivot = []): \Illuminate\Testing\TestResponse
+    private function participantMutateRequest(User $user, Seance $seance, string $operation, User $participant, array $pivot = []): TestResponse
     {
         return $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
             ->postJson('/api/seances/mutate', [
