@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Place;
+use Functional\Places\Models\Place;
 use function Laravel\Folio\middleware;
 use function Laravel\Folio\name;
 
@@ -49,7 +49,7 @@ $defaultAgency = $myAgencyId !== null ? (string) $myAgencyId : 'all';
                 </div>
             @endunless
 
-            @can('create', App\Models\Seance::class)
+            @can('create', Functional\Seances\Models\Seance::class)
                 <a href="{{ route('seances.create') }}" class="btn btn-primary btn-sm">+ Nouvelle séance</a>
             @endcan
         </div>
@@ -69,7 +69,7 @@ $defaultAgency = $myAgencyId !== null ? (string) $myAgencyId : 'all';
              data-agency="{{ $defaultAgency }}"
              data-initial-view="timeGridWeek"
              data-create-url="{{ route('seances.create') }}"
-             data-can-create="{{ auth()->user()?->can('create', App\Models\Seance::class) ? '1' : '' }}"></div>
+             data-can-create="{{ auth()->user()?->can('create', Functional\Seances\Models\Seance::class) ? '1' : '' }}"></div>
     </section>
 
     @push('scripts')

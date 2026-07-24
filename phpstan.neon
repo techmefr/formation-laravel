@@ -5,6 +5,8 @@ includes:
 parameters:
     paths:
         - app/
+        - functional/
+        - technical/
 
     # Niveau d'analyse : 0 (permissif) → 10 (strict). Le Makefile vise >= 5.
     level: 5

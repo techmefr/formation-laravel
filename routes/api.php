@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use App\Rest\Controllers\SeancesController;
+use Functional\Authentication\Http\Controllers\Api\AuthController;
+use Functional\Seances\Rest\Controllers\SeancesController;
 use Illuminate\Support\Facades\Route;
 use Lomkit\Rest\Facades\Rest;
 

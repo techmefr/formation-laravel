@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
+use Functional\Users\Models\User;
 use function Laravel\Folio\middleware;
 use function Laravel\Folio\name;
 
@@ -25,7 +25,7 @@ if ($defaultStart === null && request('date') !== null && request('start') !== n
 ?>
 
 <x-app-layout title="Nouvelle séance">
-    @cannot('create', App\Models\Seance::class)
+    @cannot('create', Functional\Seances\Models\Seance::class)
         <section class="panel mx-auto max-w-2xl p-6">
             <p class="text-sm text-base-content/70">Vous n'avez pas le droit de créer une séance.</p>
         </section>

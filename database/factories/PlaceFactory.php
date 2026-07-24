@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Place;
+use Functional\Places\Models\Place;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PlaceFactory extends Factory
 {
+    /**
+     * @var class-string<Place>
+     */
+    protected $model = Place::class;
+
     /**
      * Define the model's default state.
      *

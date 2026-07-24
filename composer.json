@@ -36,7 +36,14 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
+            "Database\\Seeders\\": "database/seeders/",
+            "Functional\\Authentication\\": "functional/authentication/src/",
+            "Functional\\Users\\": "functional/users/src/",
+            "Functional\\Places\\": "functional/places/src/",
+            "Functional\\Seances\\": "functional/seances/src/",
+            "Functional\\Calendar\\": "functional/calendar/src/",
+            "Technical\\AccessControl\\": "technical/access-control/src/",
+            "Technical\\RestApi\\": "technical/rest-api/src/"
         }
     },
     "autoload-dev": {

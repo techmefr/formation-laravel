@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
+use Functional\Users\Models\User;
 use function Laravel\Folio\middleware;
 use function Laravel\Folio\name;
 

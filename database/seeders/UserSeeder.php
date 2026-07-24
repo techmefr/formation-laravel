@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Place;
-use App\Models\User;
+use Functional\Places\Models\Place;
+use Functional\Users\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 

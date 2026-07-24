@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
+use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -12,6 +12,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SeanceFactory extends Factory
 {
+    /**
+     * @var class-string<Seance>
+     */
+    protected $model = Seance::class;
+
     /**
      * Define the model's default state.
      *
