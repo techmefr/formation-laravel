@@ -13,4 +13,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 });
 
-Rest::resource('seances', SeancesController::class)->middleware('auth:api');
+Rest::resource('seances', SeancesController::class)
+    ->middleware('auth:api')
+    ->names(['destroy' => 'api.seances.destroy']);

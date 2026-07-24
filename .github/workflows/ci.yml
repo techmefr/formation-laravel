@@ -45,6 +45,7 @@ jobs:
           cp .env.example .env
           composer install --no-interaction --prefer-dist --no-progress
           php artisan key:generate
+          php artisan jwt:secret --force
 
       - name: Pint (style)
         run: vendor/bin/pint --test

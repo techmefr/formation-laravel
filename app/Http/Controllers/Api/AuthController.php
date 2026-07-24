@@ -48,18 +48,13 @@ class AuthController extends Controller
 
     private function respondWithToken(string $token): JsonResponse
     {
+        /** @var JWTGuard $guard */
+        $guard = Auth::guard('api');
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => $this->jwtGuard()->factory()->getTTL() * 60,
+            'expires_in' => $guard->factory()->getTTL() * 60,
         ]);
-    }
-
-    private function jwtGuard(): JWTGuard
-    {
-        $guard = Auth::guard('api');
-        assert($guard instanceof JWTGuard);
-
-        return $guard;
     }
 }

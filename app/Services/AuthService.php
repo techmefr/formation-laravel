@@ -36,26 +36,24 @@ class AuthService
      */
     public function attemptJwt(array $credentials): ?string
     {
-        $token = $this->jwtGuard()->attempt($credentials);
+        /** @var JWTGuard $guard */
+        $guard = Auth::guard('api');
+
+        $token = $guard->attempt($credentials);
 
         return $token ?: null;
     }
 
     public function refreshJwt(): string
     {
-        return $this->jwtGuard()->refresh();
+        /** @var JWTGuard $guard */
+        $guard = Auth::guard('api');
+
+        return $guard->refresh();
     }
 
     public function logoutJwt(): void
     {
         Auth::guard('api')->logout();
-    }
-
-    private function jwtGuard(): JWTGuard
-    {
-        $guard = Auth::guard('api');
-        assert($guard instanceof JWTGuard);
-
-        return $guard;
     }
 }
