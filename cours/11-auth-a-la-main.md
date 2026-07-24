@@ -1,4 +1,4 @@
-# Tuto — L'authentification à la main (Partie I web)
+# Cours 11 — L'authentification à la main (pas à pas, Partie I web)
 
 > But : construire toi-même l'auth web (register / login / logout) **sans Breeze ni Fortify**, pour voir chaque fil. Session + cookie, guard `web`. Tu écris le code ; ce guide te dit **où**, **quoi**, et **pourquoi**.
 >
@@ -12,8 +12,20 @@ Ces briques sont déjà en place, tu n'as PAS à les refaire :
 
 - `spatie/laravel-permission` installé, tables migrées, `config/permission.php` publié.
 - Trait `HasRoles` sur `app/Models/User.php`.
-- `RolesAndPermissionsSeeder` : 3 permissions (`create/update/delete seances`) + 3 rôles.
-- `DatabaseSeeder` crée **3 users de test** (mot de passe `password`) :
+- `RolesAndPermissionsSeeder` :
+    - permissions :
+        - create seances
+        - update seances
+        - cancel seances
+        - delete seances
+        - manage participants
+    - rôles :
+        - admin
+        - manager
+        - coach
+        - collaborator
+
+-`DatabaseSeeder` crée **3 users de test** (mot de passe `password`) :
   - `admin@example.com` (admin) · `coach@example.com` (coach) · `collab@example.com` (collaborator)
 
 Rejoue-les quand tu veux avec `make fresh` (= `migrate:fresh --seed`).

@@ -5,14 +5,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }} — Séances de sport</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=bricolage-grotesque:600,700|instrument-sans:400,500,600" rel="stylesheet">
     <style>
         :root {
             --red: #c8102e;
             --red-hover: #a50d26;
             --red-accent: #e11d2a;
             --red-link: #ff6b6f;
-            --field-bg: #0e1120;
-            --border: #2c3252;
+            --field-bg: #141011;
+            --border: #332b2e;
             --ring: rgba(225, 29, 42, .40);
             --text: #f4f5f8;
             --muted: #aab2c5;
@@ -27,13 +29,44 @@
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-family: 'Instrument Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
             color: var(--text);
-            background: #0f1424 url('/images/sport-bg.jpg') center center / cover no-repeat;
+            background: transparent;
+        }
+        .gradient-yozaki {
+            position: fixed;
+            inset: 0;
+            z-index: -10;
+            background-color: #0b0a0a;
+            background-image:
+                radial-gradient(42% 42% at 10% 12%, rgba(200, 16, 46, 0.8) 0%, rgba(200, 16, 46, 0) 52%),
+                radial-gradient(38% 38% at 90% 15%, rgba(225, 29, 42, 0.7) 0%, rgba(225, 29, 42, 0) 50%),
+                radial-gradient(38% 38% at 85% 90%, rgba(255, 107, 111, 0.55) 0%, rgba(255, 107, 111, 0) 52%),
+                radial-gradient(40% 40% at 12% 90%, rgba(200, 16, 46, 0.75) 0%, rgba(200, 16, 46, 0) 52%);
+            background-size: 180% 180%;
+            animation: yozaki-flow 12s ease-in-out infinite;
+        }
+        .gradient-yozaki::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('/images/noise.png') repeat;
+            background-size: 256px 256px;
+            image-rendering: pixelated;
+            mix-blend-mode: overlay;
+            opacity: 0.04;
+            pointer-events: none;
+        }
+        @keyframes yozaki-flow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .gradient-yozaki { animation: none; }
         }
         .auth-card {
             width: min(92vw, 25rem);
-            background: linear-gradient(180deg, #1b2038, #12162a);
+            background: linear-gradient(180deg, #1c1618, #120f10);
             border: 1px solid rgba(255, 255, 255, .07);
             border-top: 3px solid var(--red);
             border-top-right-radius: 1.5rem;
@@ -50,9 +83,10 @@
             margin: 0;
             padding-left: .65rem;
             border-left: 4px solid var(--red);
+            font-family: 'Bricolage Grotesque', 'Instrument Sans', system-ui, sans-serif;
             font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: .02em;
+            font-weight: 700;
+            letter-spacing: -.01em;
         }
         .auth-card__subtitle {
             margin: .2rem 0 0;
@@ -150,6 +184,7 @@
     </style>
 </head>
 <body>
+    <div class="gradient-yozaki" aria-hidden="true"></div>
     <main class="auth-card">
         <header class="auth-card__header">
             <p class="auth-card__title">{{ $title }}</p>

@@ -18,10 +18,13 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+/public/vendor/rest
 /storage/*.key
 /storage/pail
 /vendor
 _ide_helper.php
+/faker_mixin.php
+/packages.php
 Homestead.json
 Homestead.yaml
 Thumbs.db

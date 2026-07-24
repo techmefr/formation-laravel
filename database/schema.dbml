@@ -17,16 +17,30 @@ Table seances {
   id bigint [pk, increment]
   name varchar [not null, note: 'Nom de la séance']
   coach_id bigint [not null, note: 'Coach animant la séance']
+  place_id bigint [not null, note: 'Lieu de la séance (agence ou externe)']
   started_at datetime [not null, note: 'Date et heure de début']
   ended_at datetime [not null, note: 'Date et heure de fin (durée = ended_at - started_at)']
   max_participants int [null, note: 'Nb max de participants']
   recurrence varchar [not null, default: 'none', note: 'none, daily, weekly ou monthly']
   recurrence_until date [null, note: 'Date de fin de répétition']
+  cancelled_at timestamp [null, note: 'Annulee (null = active)']
   deleted_at timestamp [null, note: 'Soft delete']
   created_at timestamp
   updated_at timestamp
 }
 Ref: seances.coach_id > users.id // une séance appartient à un coach (User)
+Ref: seances.place_id > places.id // et se déroule dans un lieu
+
+// --- Lieux : agence ou externe ---
+Table places {
+  id bigint [pk, increment]
+  name varchar [not null, note: 'Ville']
+  description text [null, note: 'Adresse ou libellé (ex: Yotta la course de l entreprise)']
+  type varchar [not null, note: 'agency ou external']
+  code char(4) [null, unique, note: 'Code agence (null si externe)']
+  created_at timestamp
+  updated_at timestamp
+}
 
 // --- Fichiers : Spatie Media Library (table polymorphe) ---
 Table media {
@@ -86,10 +100,12 @@ Table model_has_permissions {
 Ref: model_has_permissions.permission_id > permissions.id
 Ref: model_has_permissions.model_id > users.id
 
-// --- À venir (étape Inscription) : les participants d'une séance ---
+// --- Inscriptions : participants d'une séance (avec file d'attente) ---
 Table seance_user {
   seance_id bigint
   user_id bigint
+  status varchar [not null, note: 'registered ou waitlist']
+  position int [not null, note: 'ordre (file d attente)']
   created_at timestamp
   updated_at timestamp
   indexes { (seance_id, user_id) [pk] }
