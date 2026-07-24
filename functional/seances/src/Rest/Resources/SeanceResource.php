@@ -6,10 +6,8 @@ use Functional\Places\Rest\Resources\PlaceResource;
 use Functional\Seances\Events\SeanceCreated;
 use Functional\Seances\Events\SeanceDeleted;
 use Functional\Seances\Models\Seance;
-use Functional\Seances\Rest\Actions\AddParticipantAction;
 use Functional\Seances\Rest\Actions\CancelSeanceAction;
 use Functional\Seances\Rest\Actions\RegisterAction;
-use Functional\Seances\Rest\Actions\RemoveParticipantAction;
 use Functional\Seances\Rest\Actions\UnregisterAction;
 use Functional\Users\Rest\Resources\UserResource;
 use Illuminate\Database\Eloquent\Model;
@@ -46,7 +44,12 @@ class SeanceResource extends Resource
         return [
             BelongsTo::make('coach', UserResource::class),
             BelongsTo::make('place', PlaceResource::class),
-            BelongsToMany::make('participants', UserResource::class),
+            BelongsToMany::make('participants', UserResource::class)
+                ->withPivotFields(['status', 'position'])
+                ->withPivotRules([
+                    'status' => ['sometimes', 'in:registered,waitlist'],
+                    'position' => ['sometimes', 'integer', 'min:0'],
+                ]),
         ];
     }
 
@@ -82,8 +85,6 @@ class SeanceResource extends Resource
             app(CancelSeanceAction::class),
             app(RegisterAction::class),
             app(UnregisterAction::class),
-            app(AddParticipantAction::class),
-            app(RemoveParticipantAction::class),
         ];
     }
 

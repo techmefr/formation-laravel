@@ -28,16 +28,14 @@ class UserSeeder extends Seeder
             }
         }
 
-        User::factory(5)->create()->each(function ($user) use ($agencies) {
-            $user->agency_id = $agencies->random()->id;
-            $user->save();
-            $user->assignRole('coach');
-        });
+        User::factory(5)
+            ->recycle($agencies)
+            ->create(['agency_id' => Place::factory()])
+            ->each->assignRole('coach');
 
-        User::factory(10)->create()->each(function ($user) use ($agencies) {
-            $user->agency_id = $agencies->random()->id;
-            $user->save();
-            $user->assignRole('collaborator');
-        });
+        User::factory(10)
+            ->recycle($agencies)
+            ->create(['agency_id' => Place::factory()])
+            ->each->assignRole('collaborator');
     }
 }
