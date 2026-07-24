@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Place;
-use App\Models\Seance;
-use App\Models\User;
-use App\Notifications\SeanceCancelledNotification;
-use App\Notifications\SeanceCreatedNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Functional\Places\Models\Place;
+use Functional\Seances\Models\Seance;
+use Functional\Seances\Notifications\SeanceCancelledNotification;
+use Functional\Seances\Notifications\SeanceCreatedNotification;
+use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
