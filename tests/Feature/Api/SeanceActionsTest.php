@@ -51,6 +51,29 @@ class SeanceActionsTest extends TestCase
             ]);
     }
 
+    private function participantMutateRequest(User $user, Seance $seance, string $operation, User $participant, array $pivot = []): \Illuminate\Testing\TestResponse
+    {
+        return $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->postJson('/api/seances/mutate', [
+                'mutate' => [[
+                    'operation' => 'update',
+                    'key' => $seance->id,
+                    'attributes' => [
+                        'name' => $seance->name,
+                        'place_id' => $seance->place_id,
+                        'coach_id' => $seance->coach_id,
+                        'started_at' => $seance->started_at->toIso8601String(),
+                        'ended_at' => $seance->ended_at->toIso8601String(),
+                    ],
+                    'relations' => [
+                        'participants' => [
+                            array_merge(['operation' => $operation, 'key' => $participant->id], $pivot !== [] ? ['pivot' => $pivot] : []),
+                        ],
+                    ],
+                ]],
+            ]);
+    }
+
     public function test_participant_can_register_to_a_seance(): void
     {
         $seance = $this->seanceOwnedBy($this->userWithRole('coach'), ['max_participants' => 10]);
@@ -141,9 +164,8 @@ class SeanceActionsTest extends TestCase
         $seance = $this->seanceOwnedBy($coach, ['max_participants' => 10]);
         $participant = $this->userWithRole('collaborator');
 
-        $this->actionRequest($coach, 'add-participant', $seance, [
-            ['name' => 'user_id', 'value' => $participant->id],
-        ])->assertOk();
+        $this->participantMutateRequest($coach, $seance, 'attach', $participant, ['status' => 'registered', 'position' => 0])
+            ->assertOk();
 
         $this->assertDatabaseHas('seance_user', [
             'seance_id' => $seance->id, 'user_id' => $participant->id, 'status' => 'registered',
@@ -157,9 +179,8 @@ class SeanceActionsTest extends TestCase
         $seance = $this->seanceOwnedBy($owner, ['max_participants' => 10]);
         $participant = $this->userWithRole('collaborator');
 
-        $this->actionRequest($intruder, 'add-participant', $seance, [
-            ['name' => 'user_id', 'value' => $participant->id],
-        ])->assertForbidden();
+        $this->participantMutateRequest($intruder, $seance, 'attach', $participant, ['status' => 'registered', 'position' => 0])
+            ->assertForbidden();
 
         $this->assertDatabaseMissing('seance_user', ['seance_id' => $seance->id, 'user_id' => $participant->id]);
     }
@@ -170,9 +191,8 @@ class SeanceActionsTest extends TestCase
         $collaborator = $this->userWithRole('collaborator');
         $participant = $this->userWithRole('collaborator');
 
-        $this->actionRequest($collaborator, 'add-participant', $seance, [
-            ['name' => 'user_id', 'value' => $participant->id],
-        ])->assertForbidden();
+        $this->participantMutateRequest($collaborator, $seance, 'attach', $participant, ['status' => 'registered', 'position' => 0])
+            ->assertForbidden();
     }
 
     public function test_coach_can_remove_a_participant_from_their_own_seance(): void
@@ -182,9 +202,7 @@ class SeanceActionsTest extends TestCase
         $participant = $this->userWithRole('collaborator');
         $seance->participants()->attach($participant->id, ['status' => 'registered', 'position' => 0]);
 
-        $this->actionRequest($coach, 'remove-participant', $seance, [
-            ['name' => 'user_id', 'value' => $participant->id],
-        ])->assertOk();
+        $this->participantMutateRequest($coach, $seance, 'detach', $participant)->assertOk();
 
         $this->assertDatabaseMissing('seance_user', ['seance_id' => $seance->id, 'user_id' => $participant->id]);
     }
