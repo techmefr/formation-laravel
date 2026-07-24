@@ -39,13 +39,14 @@ class SeanceSeeder extends Seeder
                     $howMany = fake()->numberBetween(0, 3);
 
                     foreach (collect($types)->shuffle()->take($howMany) as $type) {
-                        $seance = Seance::factory()->create([
-                            'name' => $type,
-                            'coach_id' => $placeCoaches->random()->id,
-                            'place_id' => $place->id,
-                            'started_at' => $day->copy()->setTime($startHour, $startMinute),
-                            'ended_at' => $day->copy()->setTime($endHour, $endMinute),
-                        ]);
+                        $seance = Seance::factory()
+                            ->recycle($placeCoaches)
+                            ->create([
+                                'name' => $type,
+                                'place_id' => $place->id,
+                                'started_at' => $day->copy()->setTime($startHour, $startMinute),
+                                'ended_at' => $day->copy()->setTime($endHour, $endMinute),
+                            ]);
 
                         $capacity = $seance->max_participants ?? 10;
                         $count = min(fake()->numberBetween(0, $capacity + 3), $collaborators->count());

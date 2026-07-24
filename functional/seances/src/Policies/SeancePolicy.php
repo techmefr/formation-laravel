@@ -34,6 +34,16 @@ class SeancePolicy extends ControlledPolicy
         return $user->can('manage participants') && $this->ownsOrManages($user, $seance);
     }
 
+    public function attachUser(User $user, Seance $seance, User $participant): bool
+    {
+        return $this->manageParticipants($user, $seance);
+    }
+
+    public function detachUser(User $user, Seance $seance, User $participant): bool
+    {
+        return $this->manageParticipants($user, $seance);
+    }
+
     private function ownsOrManages(User $user, Seance $seance): bool
     {
         return $user->hasRole(['admin', 'manager']) || $seance->coach_id === $user->id;
